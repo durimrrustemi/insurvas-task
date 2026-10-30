@@ -83,21 +83,24 @@ class TestComputeScores:
         assert result.confidence == 0.0
         assert all(cs.coverage == 0.0 for cs in result.criteria.values())
 
-    def test_single_signal(self, config: AppConfig):
+    def test_country_baseline_alone_has_no_total(self, config: AppConfig):
+        # The baseline is a prior about the country, not evidence about the company.
         signals = [
-            SignalResult(
-                criterion="english",
-                key="english_baseline",
-                value=0.75,
-                weight=1.0,
-            ),
+            SignalResult(criterion="english", key="english_baseline", value=0.75, weight=1.0),
         ]
         result = compute_scores(signals, config)
-        assert result.total is not None
-        assert result.total == pytest.approx(0.75, abs=0.01)
+        assert result.total is None
         assert result.criteria["english"].score == pytest.approx(0.75, abs=0.01)
         assert result.criteria["english"].coverage > 0
         assert result.criteria["insurance"].coverage == 0.0
+
+    def test_single_company_signal(self, config: AppConfig):
+        signals = [
+            SignalResult(criterion="english", key="english_baseline", value=0.75, weight=1.0),
+            SignalResult(criterion="english", key="native_english_claim", value=1.0, weight=1.5),
+        ]
+        result = compute_scores(signals, config)
+        assert result.total == pytest.approx((0.75 * 1.0 + 1.0 * 1.5) / 2.5, abs=0.01)
 
     def test_multiple_criteria(self, config: AppConfig):
         signals = [

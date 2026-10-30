@@ -107,3 +107,17 @@ def test_partner_domain_drops_path():
 
     url = "https://www.outsourcing.test/guide/top-call-centers"
     assert partner_normalise(url) == "outsourcing.test"
+
+
+def test_directory_title_without_number_is_dropped():
+    from app.config import load_config
+
+    cfg = load_config()
+    candidates = [
+        Candidate(
+            url="https://d.test", domain="", name="The Best Call Centers Companies in Dallas"
+        ),
+        Candidate(url="https://e.test", domain="", name="Best Final Expense Live Leads Transfer"),
+    ]
+    result = dedupe_candidates(candidates, cfg.exclude_domains, cfg.exclude_title_patterns)
+    assert [c.domain for c in result] == ["e.test"]

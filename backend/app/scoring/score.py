@@ -12,6 +12,9 @@ from __future__ import annotations
 from app.config import AppConfig
 from app.scoring import CriterionScore, ScoreResult, SignalResult
 
+# Signals that describe the country, not the company (countries.yaml baseline).
+PRIOR_KEYS = frozenset({"english_baseline"})
+
 
 def compute_scores(
     signals: list[SignalResult],
@@ -59,7 +62,13 @@ def compute_scores(
         for c, cw in criterion_weights.items()
         if criteria.get(c) and criteria[c].coverage > 0
     ]
-    if active:
+    # A country prior says nothing about the company itself. Without at least one
+    # company-specific signal the total stays unknown instead of echoing the prior
+    # (a blocked US site would otherwise rank 100% on the US English baseline alone).
+    has_company_evidence = any(
+        s.key not in PRIOR_KEYS for s in signals if s.criterion in criterion_weights
+    )
+    if active and has_company_evidence:
         total_num = sum(cw * cs.score for cw, cs in active)
         total_den = sum(cw for cw, _ in active)
         total = round(total_num / total_den, 4) if total_den > 0 else None

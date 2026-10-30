@@ -121,8 +121,12 @@ async def run_discovery(
         html = page_data.get("html", "")
 
         try:
-            homepage_text = extract_text(html)
             title = extract_title(html)
+            if _is_bot_challenge(title):
+                # Cloudflare & co. served a check page, not the site: nothing to score.
+                logger.info("Bot challenge for %s, skipping its text", candidate.url)
+                html, title = "", ""
+            homepage_text = extract_text(html)
 
             # Find and fetch inner pages
             inner_urls = find_inner_urls(html, candidate.url, max_pages=3)
@@ -157,3 +161,10 @@ async def run_discovery(
         finished_at=finished_at,
         total_found=len(enriched),
     )
+
+
+BOT_CHALLENGE_TITLES = ("just a moment", "attention required", "access denied", "are you a robot")
+
+
+def _is_bot_challenge(title: str) -> bool:
+    return title.strip().lower().startswith(BOT_CHALLENGE_TITLES)

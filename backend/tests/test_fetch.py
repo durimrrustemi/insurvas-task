@@ -134,3 +134,30 @@ async def test_runner_survives_broken_source_and_sites(monkeypatch):
     assert set(by_domain) == {"ok.test", "down.test"}
     assert "hello" in by_domain["ok.test"].homepage_text
     assert by_domain["down.test"].homepage_text == ""
+
+
+async def test_runner_ignores_bot_challenge_pages(monkeypatch):
+    class OneSource:
+        def __init__(self, key: str) -> None:
+            pass
+
+        async def search(self, query: str, country: str) -> list[Candidate]:
+            return [
+                Candidate(
+                    url="https://cf.test/", domain="cf.test", name="Real Name", country=country
+                )
+            ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        return httpx.Response(
+            200, html="<title>Just a moment...</title><p>Checking your browser</p>"
+        )
+
+    monkeypatch.setattr(runner_mod, "SerperSource", OneSource)
+    use_transport(monkeypatch, handler)
+    result = await runner_mod.run_discovery(load_config(), "PH", limit=1, serper_key="x")
+    [only] = result.candidates
+    assert only.homepage_text == ""
+    assert only.title == "Real Name"
