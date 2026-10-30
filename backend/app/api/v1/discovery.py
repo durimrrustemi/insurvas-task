@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.errors import NotFound
-from app.schemas.discovery import DiscoveryRunCreate, DiscoveryRunRead
+from app.schemas.discovery import DiscoveryCandidate, DiscoveryRunCreate, DiscoveryRunRead
+from app.schemas.partner import PartnerRead
 from app.services import discovery as discovery_service
 
 router = APIRouter(prefix="/discovery", tags=["discovery"])
@@ -40,3 +41,12 @@ async def get_run(
     if not run:
         raise NotFound(f"Discovery run {run_id} not found")
     return DiscoveryRunRead.model_validate(run)
+
+
+@router.get("/runs/{run_id}/candidates", response_model=list[DiscoveryCandidate])
+async def get_run_candidates(
+    run_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    found = await discovery_service.get_run_candidates(session, run_id)
+    return [DiscoveryCandidate(partner=PartnerRead.model_validate(p), new=n) for p, n in found]

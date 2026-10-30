@@ -22,6 +22,10 @@ VENDOR_PHRASES = [
     "exclusive leads",
     "cost per lead",
     "price per transfer",
+    "live transfer leads",
+    "final expense leads",
+    "insurance leads",
+    "life insurance leads",
 ]
 
 # Phrases a BPO uses to describe the operation it runs for clients. Not "agents":
@@ -51,3 +55,23 @@ def classify_partner_type(text: str) -> PartnerType:
     t = text.lower()
     vendor, bpo = _count(t, VENDOR_PHRASES), _count(t, BPO_PHRASES)
     return PartnerType.VENDOR if vendor > bpo else PartnerType.BPO
+
+
+# Broader than the type phrases: any sign the site is a call center or lead seller.
+PARTNER_SITE_PHRASES = [
+    *VENDOR_PHRASES,
+    *BPO_PHRASES,
+    "call center",
+    "call centre",
+    "telemarketing",
+    "live transfer",
+]
+
+
+def is_partner_site(text: str) -> bool:
+    """False for pages that never mention call centers or leads (articles, guides).
+
+    Search results include "cost of living in the Philippines" style pages; with
+    good English and a few generic words they would otherwise score high.
+    """
+    return _count(text.lower(), PARTNER_SITE_PHRASES) > 0

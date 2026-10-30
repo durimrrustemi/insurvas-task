@@ -11,4 +11,6 @@ export type {
   ReadinessCheck,
   TransitionReadiness,
   PartnerReadiness,
+  DiscoveryRun,
+  DiscoveryCandidate,
 } from "./api";

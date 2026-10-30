@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from app.config import AppConfig
 from app.discovery import Candidate
+from app.discovery.classify import is_partner_site
 from app.discovery.dedupe import dedupe_candidates
 from app.discovery.extract import extract_text, extract_title
 from app.discovery.fetch import fetch_pages, find_inner_urls
@@ -75,7 +76,7 @@ async def run_discovery(
 
     all_candidates: list[Candidate] = []
     for source in sources:
-        for query in queries:
+        for i, query in enumerate(queries, 1):
             try:
                 results = await source.search(query, country_code)
             except Exception:
@@ -87,6 +88,15 @@ async def run_discovery(
             # are filtered out, so raw counts overestimate what a run will yield.
             usable = dedupe_candidates(
                 all_candidates, config.exclude_domains, config.exclude_title_patterns
+            )
+            logger.info(
+                "Search %d/%d %r: %d results, %d/%d usable so far",
+                i,
+                len(queries),
+                query,
+                len(results),
+                min(len(usable), limit),
+                limit,
             )
             if len(usable) >= limit:
                 break
@@ -110,13 +120,14 @@ async def run_discovery(
     )
 
     # 4. Fetch homepages
+    logger.info("Fetching %d homepages", len(unique))
     urls = [c.url for c in unique]
     pages = await fetch_pages(urls)
     page_map = {p["url"]: p for p in pages}
 
     # 5. Extract text, find inner pages, fetch them
     enriched: list[EnrichedCandidate] = []
-    for candidate in unique:
+    for n, candidate in enumerate(unique, 1):
         page_data = page_map.get(candidate.url, {})
         html = page_data.get("html", "")
 
@@ -142,6 +153,26 @@ async def run_discovery(
             logger.exception("Enrichment failed for %s", candidate.url)
             homepage_text, title, inner_urls, inner_texts = "", "", [], {}
 
+        site_text = " ".join(
+            [title, candidate.name, candidate.snippet, homepage_text, *inner_texts.values()]
+        )
+        if not is_partner_site(site_text):
+            logger.info(
+                "Site %d/%d %s: skipped, not a call center or lead vendor",
+                n,
+                len(unique),
+                candidate.domain,
+            )
+            continue
+
+        logger.info(
+            "Site %d/%d %s: %s, %d inner pages",
+            n,
+            len(unique),
+            candidate.domain,
+            "ok" if homepage_text else "no text",
+            len(inner_texts),
+        )
         enriched.append(
             EnrichedCandidate(
                 candidate=candidate,

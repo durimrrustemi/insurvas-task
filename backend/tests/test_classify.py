@@ -18,6 +18,7 @@ from app.models.partner import PartnerType
         # Ties and silence go to BPO: a wrongly typed vendor is cheaper to fix by hand.
         ("We sell leads. Contact center.", PartnerType.BPO),
         ("", PartnerType.BPO),
+        ("Final Expense Live Transfer Leads: 2026 Guide + Pricing", PartnerType.VENDOR),
         # Vendors talk about the buyer's agents a lot; that isn't BPO language.
         (
             "Final expense leads for sale, sent live to your agents. Our agents "
@@ -30,3 +31,18 @@ from app.models.partner import PartnerType
 )
 def test_classify(text: str, expected: PartnerType) -> None:
     assert classify_partner_type(text) is expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Cebu Call Center Outsourcing - Top CX & BPO Services", True),
+        ("Live Transfer Leads | Pay Per Call Platform", True),
+        ("Cost of living in the Philippines: Your guide. Rent, food, transport.", False),
+        ("", False),
+    ],
+)
+def test_is_partner_site(text: str, expected: bool) -> None:
+    from app.discovery.classify import is_partner_site
+
+    assert is_partner_site(text) is expected

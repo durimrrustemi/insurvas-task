@@ -16,8 +16,10 @@ export function DiscoverForm({ countries }: { countries: Array<{ code: string; n
     setRunning(true);
     setResult(null);
     try {
-      const run = (await startDiscoveryRun(country, limit)) as Record<string, unknown>;
+      const run = await startDiscoveryRun(country, limit);
       setResult(`Done: found ${run.found}, new ${run.new}`);
+      // The page shows the results of the run in the URL.
+      router.push(`/discover?run=${run.id}`);
       router.refresh();
     } catch (err) {
       setResult(`Error: ${err instanceof Error ? err.message : "unknown"}`);
@@ -62,6 +64,12 @@ export function DiscoverForm({ countries }: { countries: Array<{ code: string; n
           {running ? "Running..." : "Run discovery"}
         </button>
       </div>
+      {running && (
+        <p className="text-sm text-gray-500">
+          Searching, fetching each site and scoring it. About a minute for 15 partners; progress
+          shows in the API terminal.
+        </p>
+      )}
       {result && (
         <p className={`text-sm ${result.startsWith("Error") ? "text-red-600" : "text-green-600"}`}>
           {result}

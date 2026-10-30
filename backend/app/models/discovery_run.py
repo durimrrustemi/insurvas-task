@@ -24,3 +24,6 @@ class DiscoveryRun(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     found: Mapped[int] = mapped_column(Integer, default=0)
     new: Mapped[int] = mapped_column(Integer, default=0)
+    # Partners this run found (as id strings), and which of them it created.
+    partner_ids: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    new_partner_ids: Mapped[list] = mapped_column(JSON, nullable=False, default=list)

@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.partner import PartnerRead
+
 
 class DiscoveryRunCreate(BaseModel):
     country: str
@@ -21,3 +23,8 @@ class DiscoveryRunRead(BaseModel):
     new: int
 
     model_config = {"from_attributes": True}
+
+
+class DiscoveryCandidate(BaseModel):
+    partner: PartnerRead
+    new: bool

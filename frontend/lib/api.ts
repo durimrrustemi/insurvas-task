@@ -195,15 +195,34 @@ export async function getConfig(): Promise<Record<string, unknown>> {
   return apiFetch<Record<string, unknown>>("/config");
 }
 
+export interface DiscoveryRun {
+  id: string;
+  country: string;
+  queries: string[];
+  started_at: string;
+  finished_at: string | null;
+  found: number;
+  new: number;
+}
+
+export interface DiscoveryCandidate {
+  partner: Partner;
+  new: boolean;
+}
+
 export async function startDiscoveryRun(country: string, limit: number = 30) {
-  return apiFetch("/discovery/runs", {
+  return apiFetch<DiscoveryRun>("/discovery/runs", {
     method: "POST",
     body: JSON.stringify({ country, limit }),
   });
 }
 
 export async function getDiscoveryRuns() {
-  return apiFetch<Array<Record<string, unknown>>>("/discovery/runs");
+  return apiFetch<DiscoveryRun[]>("/discovery/runs");
+}
+
+export async function getRunCandidates(runId: string) {
+  return apiFetch<DiscoveryCandidate[]>(`/discovery/runs/${runId}/candidates`);
 }
 
 export async function createActivity(

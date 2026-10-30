@@ -13,6 +13,7 @@ from app.config import app_config
 from app.discovery.classify import classify_partner_type
 from app.discovery.dedupe import normalise_domain
 from app.discovery.runner import DiscoveryResult, run_discovery
+from app.errors import NotFound
 from app.models.discovery_run import DiscoveryRun
 from app.models.page import Page
 from app.models.partner import Partner, Stage
@@ -36,6 +37,7 @@ async def start_discovery(
     )
     session.add(run)
     await session.flush()
+    logger.info("Discovery run %s started: country=%s limit=%d", run.id, country, limit)
 
     result = await run_discovery(
         config=app_config,
@@ -45,10 +47,11 @@ async def start_discovery(
         places_key=settings.google_places_key,
     )
 
-    new_count, partner_ids = await _persist_results(session, result)
+    new_ids, partner_ids = await _persist_results(session, result)
 
     # Score right away so new candidates show up ranked, with their evidence.
-    for pid in partner_ids:
+    for i, pid in enumerate(partner_ids, 1):
+        logger.info("Scoring %d/%d", i, len(partner_ids))
         try:
             await score_partner(session, pid)
         except Exception:
@@ -56,7 +59,9 @@ async def start_discovery(
 
     run.queries = result.queries_used
     run.found = result.total_found
-    run.new = new_count
+    run.new = len(new_ids)
+    run.partner_ids = [str(pid) for pid in partner_ids]
+    run.new_partner_ids = [str(pid) for pid in new_ids]
     run.finished_at = result.finished_at
     await session.flush()
 
@@ -73,9 +78,9 @@ async def start_discovery(
 async def _persist_results(
     session: AsyncSession,
     result: DiscoveryResult,
-) -> tuple[int, list[uuid.UUID]]:
+) -> tuple[list[uuid.UUID], list[uuid.UUID]]:
     """Upsert partners and pages from discovery results. Returns new count."""
-    new_count = 0
+    new_ids: list[uuid.UUID] = []
     partner_ids: list[uuid.UUID] = []
     now = datetime.now(timezone.utc)
 
@@ -88,6 +93,12 @@ async def _persist_results(
         # Check if partner already exists
         existing = await session.execute(select(Partner).where(Partner.domain == domain))
         partner = existing.scalar_one_or_none()
+        partner_type = classify_partner_type(
+            " ".join(
+                [enriched.title, c.name, c.snippet, enriched.homepage_text]
+                + list(enriched.inner_texts.values())
+            )
+        )
 
         if partner is None:
             name = enriched.title or c.name or domain
@@ -112,15 +123,16 @@ async def _persist_results(
                     if app_config.get_country(result.country)
                     else None
                 ),
-                type=classify_partner_type(
-                    " ".join([name, c.snippet, enriched.homepage_text[:5000]])
-                ),
+                type=partner_type,
                 stage=Stage.FOUND,
                 stage_entered_at=now,
             )
             session.add(partner)
             await session.flush()
-            new_count += 1
+            new_ids.append(partner.id)
+        elif partner.stage == Stage.FOUND:
+            # Nobody has worked this partner yet: refresh the type from the latest pages.
+            partner.type = partner_type
 
         partner_ids.append(partner.id)
 
@@ -144,7 +156,7 @@ async def _persist_results(
             session.add(inner_page)
 
     await session.flush()
-    return new_count, partner_ids
+    return new_ids, partner_ids
 
 
 async def get_discovery_run(session: AsyncSession, run_id: uuid.UUID) -> DiscoveryRun | None:
@@ -156,3 +168,24 @@ async def list_discovery_runs(
 ) -> list[DiscoveryRun]:
     result = await session.execute(select(DiscoveryRun).order_by(DiscoveryRun.started_at.desc()))
     return list(result.scalars().all())
+
+
+async def get_run_candidates(
+    session: AsyncSession, run_id: uuid.UUID
+) -> list[tuple[Partner, bool]]:
+    """Partners a run found, best score first, each flagged new or already known."""
+    run = await session.get(DiscoveryRun, run_id)
+    if not run:
+        raise NotFound(f"Discovery run {run_id} not found")
+    ids = [uuid.UUID(i) for i in run.partner_ids]
+    if not ids:
+        return []
+    partners = (
+        await session.execute(
+            select(Partner)
+            .where(Partner.id.in_(ids))
+            .order_by(Partner.score_total.desc().nulls_last())
+        )
+    ).scalars()
+    new = set(run.new_partner_ids)
+    return [(p, str(p.id) in new) for p in partners]

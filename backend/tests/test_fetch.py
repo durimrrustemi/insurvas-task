@@ -112,9 +112,16 @@ async def test_runner_survives_broken_source_and_sites(monkeypatch):
     class GoodSource(BrokenSource):
         async def search(self, query: str, country: str) -> list[Candidate]:
             return [
-                Candidate(url="https://ok.test/", domain="ok.test", name="Ok", country=country),
+                # Search titles say "call center", so both count as partner sites even
+                # when the site itself is unreachable.
                 Candidate(
-                    url="https://down.test/", domain="down.test", name="Down", country=country
+                    url="https://ok.test/", domain="ok.test", name="Ok Call Center", country=country
+                ),
+                Candidate(
+                    url="https://down.test/",
+                    domain="down.test",
+                    name="Down Call Center",
+                    country=country,
                 ),
             ]
 
@@ -144,7 +151,7 @@ async def test_runner_ignores_bot_challenge_pages(monkeypatch):
         async def search(self, query: str, country: str) -> list[Candidate]:
             return [
                 Candidate(
-                    url="https://cf.test/", domain="cf.test", name="Real Name", country=country
+                    url="https://cf.test/", domain="cf.test", name="Real BPO", country=country
                 )
             ]
 
@@ -160,4 +167,30 @@ async def test_runner_ignores_bot_challenge_pages(monkeypatch):
     result = await runner_mod.run_discovery(load_config(), "PH", limit=1, serper_key="x")
     [only] = result.candidates
     assert only.homepage_text == ""
-    assert only.title == "Real Name"
+    assert only.title == "Real BPO"
+
+
+async def test_runner_drops_sites_that_are_not_partners(monkeypatch):
+    class TwoSites:
+        def __init__(self, key: str) -> None:
+            pass
+
+        async def search(self, query: str, country: str) -> list[Candidate]:
+            return [
+                Candidate(url="https://bpo.test/", domain="bpo.test", name="BPO", country=country),
+                Candidate(
+                    url="https://blog.test/", domain="blog.test", name="Blog", country=country
+                ),
+            ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        if request.url.host == "bpo.test":
+            return httpx.Response(200, html="<p>Call center outsourcing, 200 seats.</p>")
+        return httpx.Response(200, html="<p>Cost of living: rent, food and transport.</p>")
+
+    monkeypatch.setattr(runner_mod, "SerperSource", TwoSites)
+    use_transport(monkeypatch, handler)
+    result = await runner_mod.run_discovery(load_config(), "PH", limit=2, serper_key="x")
+    assert [e.candidate.domain for e in result.candidates] == ["bpo.test"]
