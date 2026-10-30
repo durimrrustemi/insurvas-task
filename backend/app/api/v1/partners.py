@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.models.partner import Blocker, Stage
+from app.schemas.message import MessageRead
 from app.schemas.partner import (
     PartnerCreate,
     PartnerList,
@@ -14,6 +15,7 @@ from app.schemas.partner import (
     PartnerUpdate,
     StageTransition,
 )
+from app.services import outreach as outreach_service
 from app.services import partners as partner_service
 from app.services import scoring as scoring_service
 
@@ -97,6 +99,21 @@ async def score_partner(
     await session.commit()
     partner = await partner_service.get_partner(session, partner_id)
     return PartnerRead.model_validate(partner)
+
+
+@router.post(
+    "/{partner_id}/outreach",
+    response_model=list[MessageRead],
+    status_code=201,
+)
+async def generate_outreach(
+    partner_id: uuid.UUID,
+    channels: list[str] | None = None,
+    session: AsyncSession = Depends(get_session),
+):
+    messages = await outreach_service.generate_outreach(session, partner_id, channels)
+    await session.commit()
+    return [MessageRead.model_validate(m) for m in messages]
 
 
 @router.post("/{partner_id}/stage", response_model=PartnerRead)

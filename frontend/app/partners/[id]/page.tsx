@@ -1,6 +1,7 @@
 import { getPartner, getSignals, getContacts, getMessages, getActivities } from "@/lib/api";
 import { StageBadge } from "@/components/StageBadge";
 import { ScoreBreakdown } from "@/components/ScoreBreakdown";
+import { MessageReview } from "@/components/MessageReview";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 
@@ -79,39 +80,8 @@ export default async function PartnerDetailPage({
         )}
       </section>
 
-      {/* Messages */}
-      <section className="mb-8">
-        <h2 className="text-lg font-medium mb-3">Messages ({messages.length})</h2>
-        {messages.length === 0 ? (
-          <p className="text-sm text-gray-500">No messages yet. Generate outreach first.</p>
-        ) : (
-          <div className="space-y-2">
-            {messages.map((m) => (
-              <div key={m.id} className="rounded border p-3 text-sm">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium capitalize">{m.channel}</span>
-                  <span className="text-gray-400">#{m.sequence}</span>
-                  <span
-                    className={`ml-auto rounded-full px-2 py-0.5 text-xs ${
-                      m.status === "approved"
-                        ? "bg-green-100 text-green-700"
-                        : m.status === "rejected"
-                          ? "bg-red-100 text-red-700"
-                          : m.status === "sent"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {m.status}
-                  </span>
-                </div>
-                {m.subject && <p className="font-medium text-xs mb-1">Subject: {m.subject}</p>}
-                <p className="text-gray-700 whitespace-pre-wrap">{m.body}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Messages with review controls */}
+      <MessageReview partnerId={id} messages={messages} />
 
       {/* Activity timeline */}
       <section className="mb-8">

@@ -149,6 +149,13 @@ export async function updateMessage(messageId: string, data: { status?: string; 
   });
 }
 
+export async function generateOutreach(partnerId: string, channels?: string[]): Promise<Message[]> {
+  return apiFetch<Message[]>(`/partners/${partnerId}/outreach`, {
+    method: "POST",
+    body: JSON.stringify(channels ? { channels } : {}),
+  });
+}
+
 export async function scorePartner(partnerId: string): Promise<Partner> {
   return apiFetch<Partner>(`/partners/${partnerId}/score`, { method: "POST" });
 }
