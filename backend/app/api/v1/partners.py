@@ -15,6 +15,7 @@ from app.schemas.partner import (
     StageTransition,
 )
 from app.services import partners as partner_service
+from app.services import scoring as scoring_service
 
 router = APIRouter(prefix="/partners", tags=["partners"])
 
@@ -85,6 +86,17 @@ async def delete_partner(
 ):
     await partner_service.delete_partner(session, partner_id)
     await session.commit()
+
+
+@router.post("/{partner_id}/score", response_model=PartnerRead)
+async def score_partner(
+    partner_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    await scoring_service.score_partner(session, partner_id)
+    await session.commit()
+    partner = await partner_service.get_partner(session, partner_id)
+    return PartnerRead.model_validate(partner)
 
 
 @router.post("/{partner_id}/stage", response_model=PartnerRead)

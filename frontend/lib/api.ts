@@ -149,6 +149,10 @@ export async function updateMessage(messageId: string, data: { status?: string; 
   });
 }
 
+export async function scorePartner(partnerId: string): Promise<Partner> {
+  return apiFetch<Partner>(`/partners/${partnerId}/score`, { method: "POST" });
+}
+
 export async function createActivity(partnerId: string, data: { kind: string; channel?: string; body?: string }) {
   return apiFetch(`/partners/${partnerId}/activities`, {
     method: "POST",

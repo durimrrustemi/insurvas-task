@@ -51,5 +51,36 @@ def discover(
     asyncio.run(_discover())
 
 
+@app.command()
+def score(
+    country: str = typer.Option(None, help="Country code to filter (optional)"),
+    partner_id: str = typer.Option(None, "--partner", "-p", help="Score a single partner by ID"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+):
+    """Score partners based on cached page content."""
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(levelname)-8s %(name)s: %(message)s",
+    )
+
+    async def _score():
+        from app.db import async_session
+        from app.services.scoring import score_all_partners, score_partner
+
+        async with async_session() as session:
+            if partner_id:
+                import uuid
+
+                result = await score_partner(session, uuid.UUID(partner_id))
+                await session.commit()
+                typer.echo(f"Scored: total={result.total} signals={len(result.signals)}")
+            else:
+                count = await score_all_partners(session, country=country)
+                await session.commit()
+                typer.echo(f"Scored {count} partners" + (f" in {country}" if country else ""))
+
+    asyncio.run(_score())
+
+
 if __name__ == "__main__":
     app()

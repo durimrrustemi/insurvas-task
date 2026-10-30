@@ -1,6 +1,6 @@
 import { getPartner, getSignals, getContacts, getMessages, getActivities } from "@/lib/api";
 import { StageBadge } from "@/components/StageBadge";
-import { ScoreBar } from "@/components/ScoreBar";
+import { ScoreBreakdown } from "@/components/ScoreBreakdown";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 
@@ -50,51 +50,8 @@ export default async function PartnerDetailPage({
         </div>
       )}
 
-      {/* Score breakdown */}
-      <section className="mb-8">
-        <h2 className="text-lg font-medium mb-3">Score breakdown</h2>
-        <div className="space-y-1">
-          <ScoreBar score={partner.score_total} label="Total" />
-          <ScoreBar score={partner.score_english} label="English" />
-          <ScoreBar score={partner.score_insurance} label="Insurance" />
-          <ScoreBar score={partner.score_size} label="Size" />
-          <ScoreBar score={partner.score_compliance} label="Compliance" />
-        </div>
-      </section>
-
-      {/* Signals / Evidence */}
-      <section className="mb-8">
-        <h2 className="text-lg font-medium mb-3">Evidence ({signals.length} signals)</h2>
-        {signals.length === 0 ? (
-          <p className="text-sm text-gray-500">No signals yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {signals.map((s) => (
-              <div key={s.id} className="rounded border p-3 text-sm">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium">{s.criterion}</span>
-                  <span className="text-gray-400">/</span>
-                  <span>{s.key.replace(/_/g, " ")}</span>
-                  <span className="ml-auto text-gray-500">
-                    value: {s.value.toFixed(2)} &middot; weight: {s.weight.toFixed(1)}
-                  </span>
-                </div>
-                {s.matched_text && <p className="text-gray-600 text-xs">{s.matched_text}</p>}
-                {s.source_url && (
-                  <a
-                    href={s.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-500 hover:underline"
-                  >
-                    {s.source_url}
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Score breakdown with expandable evidence */}
+      <ScoreBreakdown partner={partner} signals={signals} />
 
       {/* Contacts */}
       <section className="mb-8">

@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint fmt migrate seed discover demo
+.PHONY: setup dev test lint fmt migrate seed discover score demo
 
 setup:
 	cp -n .env.example .env || true
@@ -33,5 +33,8 @@ seed:
 
 discover:
 	docker compose run --rm api uv run python -m app.cli discover --country $(COUNTRY) --limit $(LIMIT)
+
+score:
+	docker compose run --rm api uv run python -m app.cli score $(if $(COUNTRY),--country $(COUNTRY),) $(if $(PARTNER),--partner $(PARTNER),)
 
 demo: migrate seed dev
