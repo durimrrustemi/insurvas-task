@@ -46,6 +46,16 @@ exclude_domains:
   - bbb.org
   - crunchbase.com
   - bloomberg.com
+  # News and business media write about BPOs but aren't one.
+  - usatoday.com
+  - inquirer.net
+  - forbes.com
+  - reuters.com
+  - cnbc.com
+  - businessinsider.com
+  - nytimes.com
+  - entrepreneur.com
+  - investopedia.com
   - reddit.com
   - quora.com
   - medium.com

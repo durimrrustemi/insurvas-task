@@ -153,6 +153,14 @@ async def run_discovery(
             logger.exception("Enrichment failed for %s", candidate.url)
             homepage_text, title, inner_urls, inner_texts = "", "", [], {}
 
+        if not homepage_text and not inner_texts:
+            # Blocked, down or empty: the search snippet alone is too little to
+            # call it a partner, and with no page text there is nothing to score.
+            logger.info(
+                "Site %d/%d %s: skipped, could not read the site", n, len(unique), candidate.domain
+            )
+            continue
+
         site_text = " ".join(
             [title, candidate.name, candidate.snippet, homepage_text, *inner_texts.values()]
         )
@@ -194,7 +202,17 @@ async def run_discovery(
     )
 
 
-BOT_CHALLENGE_TITLES = ("just a moment", "attention required", "access denied", "are you a robot")
+BOT_CHALLENGE_TITLES = (
+    "just a moment",
+    "attention required",
+    "access denied",
+    "access restricted",
+    "access to this page has been denied",
+    "are you a robot",
+    "please verify you are a human",
+    "403 forbidden",
+    "forbidden",
+)
 
 
 def _is_bot_challenge(title: str) -> bool:

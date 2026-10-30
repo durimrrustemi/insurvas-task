@@ -138,12 +138,13 @@ async def test_runner_survives_broken_source_and_sites(monkeypatch):
         load_config(), "PH", limit=5, serper_key="x", places_key="y"
     )
     by_domain = {e.candidate.domain: e for e in result.candidates}
-    assert set(by_domain) == {"ok.test", "down.test"}
+    # The broken source and the unreachable site don't stop the run; the site
+    # we couldn't read is dropped rather than kept with nothing to score.
+    assert set(by_domain) == {"ok.test"}
     assert "hello" in by_domain["ok.test"].homepage_text
-    assert by_domain["down.test"].homepage_text == ""
 
 
-async def test_runner_ignores_bot_challenge_pages(monkeypatch):
+async def test_runner_drops_bot_challenge_pages(monkeypatch):
     class OneSource:
         def __init__(self, key: str) -> None:
             pass
@@ -165,9 +166,8 @@ async def test_runner_ignores_bot_challenge_pages(monkeypatch):
     monkeypatch.setattr(runner_mod, "SerperSource", OneSource)
     use_transport(monkeypatch, handler)
     result = await runner_mod.run_discovery(load_config(), "PH", limit=1, serper_key="x")
-    [only] = result.candidates
-    assert only.homepage_text == ""
-    assert only.title == "Real BPO"
+    # A check page is not the site: nothing readable, so no candidate.
+    assert result.candidates == []
 
 
 async def test_runner_drops_sites_that_are_not_partners(monkeypatch):

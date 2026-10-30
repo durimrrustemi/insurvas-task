@@ -121,3 +121,16 @@ def test_directory_title_without_number_is_dropped():
     ]
     result = dedupe_candidates(candidates, cfg.exclude_domains, cfg.exclude_title_patterns)
     assert [c.domain for c in result] == ["e.test"]
+
+
+def test_news_sites_are_excluded():
+    from app.config import load_config
+
+    cfg = load_config()
+    candidates = [
+        Candidate(url="https://business.inquirer.net/399023/bpo", domain="", name="BPO news"),
+        Candidate(url="https://www.usatoday.com/story/bpo", domain="", name="Call centers"),
+        Candidate(url="https://acme-bpo.test", domain="", name="Acme BPO"),
+    ]
+    result = dedupe_candidates(candidates, cfg.exclude_domains, cfg.exclude_title_patterns)
+    assert [c.domain for c in result] == ["acme-bpo.test"]
