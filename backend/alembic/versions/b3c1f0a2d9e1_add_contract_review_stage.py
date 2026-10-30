@@ -1,13 +1,13 @@
 """add contract_review stage
 
 Revision ID: b3c1f0a2d9e1
-Revises: d740c678e382
+Revises: 5a7e9c1d2b4f
 """
 
 from alembic import op
 
 revision = "b3c1f0a2d9e1"
-down_revision = "d740c678e382"
+down_revision = "5a7e9c1d2b4f"
 branch_labels = None
 depends_on = None
 
