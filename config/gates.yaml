@@ -1,0 +1,29 @@
+gates:
+  us_hours:
+    description: Can operate during US business hours (EST/CST/PST)
+    evidence_keywords:
+      - us hours
+      - us shift
+      - us time zone
+      - est
+      - cst
+      - pst
+      - eastern time
+      - central time
+      - pacific time
+      - 24/7
+      - round the clock
+      - night shift
+    required_before: test_calls
+
+  compliance:
+    description: Basic compliance posture (TCPA awareness minimum)
+    evidence_keywords:
+      - tcpa
+      - complian
+      - consent
+      - dnc
+      - do not call
+      - licensed
+      - regulatory
+    required_before: test_calls

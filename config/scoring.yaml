@@ -1,0 +1,77 @@
+criterion_weights:
+  insurance: 0.35
+  english: 0.30
+  size: 0.20
+  compliance: 0.15
+
+signals:
+  english:
+    english_baseline:
+      weight: 1.0
+      description: Country baseline English proficiency
+    site_language_english:
+      weight: 2.0
+      description: Website is primarily in English
+    llm_english_grade:
+      weight: 3.0
+      description: LLM-graded English quality (1-5 scale, normalised to 0-1)
+    native_english_claim:
+      weight: 1.5
+      description: Claims native/neutral English on site
+    us_uk_au_clients:
+      weight: 2.0
+      description: Evidence of US/UK/AU client work
+
+  insurance:
+    insurance_keywords:
+      weight: 3.0
+      description: Insurance-related keywords (final expense, live transfer, Medicare, life insurance)
+    final_expense_specific:
+      weight: 4.0
+      description: Specifically mentions final expense or funeral insurance
+    live_transfer_experience:
+      weight: 4.0
+      description: Experience with live transfers
+    insurance_case_study:
+      weight: 3.0
+      description: Insurance case studies or testimonials
+    insurance_job_postings:
+      weight: 1.5
+      description: Insurance-related job postings on careers page
+    carrier_names:
+      weight: 2.0
+      description: Named insurance carriers (AETNA, Mutual of Omaha, etc.)
+
+  size:
+    stated_seats:
+      weight: 3.0
+      description: Stated number of seats/agents/employees
+    multiple_locations:
+      weight: 1.5
+      description: Multiple office locations
+    years_in_business:
+      weight: 1.0
+      description: Years operating
+    twenty_four_seven:
+      weight: 1.5
+      description: Claims 24/7 operations
+    careers_page_depth:
+      weight: 1.0
+      description: Active careers page with multiple listings
+
+  compliance:
+    tcpa_mention:
+      weight: 4.0
+      description: TCPA compliance mentioned
+    dnc_compliance:
+      weight: 2.0
+      description: DNC (Do Not Call) compliance
+    consent_recording:
+      weight: 2.0
+      description: Consent/call recording mentioned
+    pci_hipaa_iso:
+      weight: 1.5
+      description: PCI, HIPAA, or ISO certification
+    licensed_mention:
+      weight: 2.0
+      description: Licensed or regulatory compliance claims

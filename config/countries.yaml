@@ -1,0 +1,84 @@
+countries:
+  - code: PH
+    name: Philippines
+    english_baseline: 0.75
+    timezone: Asia/Manila
+    preferred_channels: [email, whatsapp]
+    cities: [Manila, Cebu, Davao, Clark, Iloilo]
+
+  - code: IN
+    name: India
+    english_baseline: 0.65
+    timezone: Asia/Kolkata
+    preferred_channels: [email, linkedin]
+    cities: [Bangalore, Mumbai, Delhi, Hyderabad, Pune, Chennai]
+
+  - code: ZA
+    name: South Africa
+    english_baseline: 0.85
+    timezone: Africa/Johannesburg
+    preferred_channels: [email, linkedin]
+    cities: [Cape Town, Johannesburg, Durban]
+
+  - code: JM
+    name: Jamaica
+    english_baseline: 0.80
+    timezone: America/Jamaica
+    preferred_channels: [email, whatsapp]
+    cities: [Kingston, Montego Bay]
+
+  - code: GH
+    name: Ghana
+    english_baseline: 0.70
+    timezone: Africa/Accra
+    preferred_channels: [email, whatsapp]
+    cities: [Accra, Kumasi]
+
+  - code: KE
+    name: Kenya
+    english_baseline: 0.70
+    timezone: Africa/Nairobi
+    preferred_channels: [email, whatsapp]
+    cities: [Nairobi, Mombasa]
+
+  - code: NG
+    name: Nigeria
+    english_baseline: 0.65
+    timezone: Africa/Lagos
+    preferred_channels: [email, whatsapp]
+    cities: [Lagos, Abuja]
+
+  - code: PK
+    name: Pakistan
+    english_baseline: 0.55
+    timezone: Asia/Karachi
+    preferred_channels: [email, linkedin]
+    cities: [Karachi, Lahore, Islamabad]
+
+  - code: EG
+    name: Egypt
+    english_baseline: 0.50
+    timezone: Africa/Cairo
+    preferred_channels: [email, linkedin]
+    cities: [Cairo, Alexandria]
+
+  - code: CO
+    name: Colombia
+    english_baseline: 0.40
+    timezone: America/Bogota
+    preferred_channels: [email, whatsapp]
+    cities: [Bogota, Medellin, Barranquilla]
+
+  - code: HN
+    name: Honduras
+    english_baseline: 0.45
+    timezone: America/Tegucigalpa
+    preferred_channels: [email, whatsapp]
+    cities: [San Pedro Sula, Tegucigalpa]
+
+  - code: FJ
+    name: Fiji
+    english_baseline: 0.70
+    timezone: Pacific/Fiji
+    preferred_channels: [email]
+    cities: [Suva]

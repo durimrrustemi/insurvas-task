@@ -1,0 +1,18 @@
+templates:
+  - "call center outsourcing {city}"
+  - "BPO {country}"
+  - "BPO insurance campaign {country}"
+  - "live transfer call center {country}"
+  - "outbound call center {city}"
+  - "telemarketing company {city}"
+  - "insurance call center {country}"
+  - "call center services {city} {country}"
+  - "outsource call center {country}"
+  - "BPO company {city}"
+  - "lead generation call center {country}"
+  - "final expense call center {country}"
+  - "life insurance telemarketing {country}"
+  - "call center outsourcing company {city} {country}"
+  - "customer service outsourcing {country}"
+
+max_queries_per_country: 25

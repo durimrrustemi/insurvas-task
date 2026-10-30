@@ -1,0 +1,28 @@
+follow_up_days: [0, 3, 7, 14]
+
+intents:
+  - sequence: 0
+    intent: intro
+    description: Introduction with personalised angle, asks qualifying questions
+  - sequence: 1
+    intent: value_add
+    description: Share a relevant insight or market data point
+  - sequence: 2
+    intent: nudge
+    description: Brief follow-up referencing prior message
+  - sequence: 3
+    intent: close_loop
+    description: Final check-in, offer to reconnect later
+
+channel_limits:
+  email:
+    max_words: 120
+    max_subject_chars: 60
+  linkedin:
+    max_chars: 300
+  whatsapp:
+    max_chars: 300
+
+reminder_days: 3
+stale_stage_days: 7
+max_follow_ups: 2
