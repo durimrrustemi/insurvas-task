@@ -36,7 +36,7 @@ TIMEZONES = {
 }
 STAGES = list(Stage)
 # Stages behind the gates (rules.py): seeded partners there have passed them.
-GATED_STAGES = {Stage.TEST_CALLS, Stage.SIGNED}
+GATED_STAGES = {Stage.TEST_CALLS, Stage.CONTRACT_REVIEW, Stage.SIGNED}
 OPEN_BLOCKERS = [(Stage.IN_TALKS, Blocker.PRICING), (Stage.CONTACTED, Blocker.NO_RESPONSE)]
 LOST_REASONS = ["no response", "pricing", "no US hours", "capacity"]
 BPO_NAMES = [
