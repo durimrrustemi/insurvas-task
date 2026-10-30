@@ -200,3 +200,29 @@ class TestBoardAndAttention:
         assert "Fresh BPO" not in by_name
         assert "no touch for 4d" in by_name["Quiet BPO"]["reasons"]
         assert "blocker: pricing" in by_name["Blocked BPO"]["reasons"]
+
+
+class TestOutreach:
+    async def test_empty_body_uses_country_preferred_channels(self, client: AsyncClient):
+        # The UI posts {} (no channel filter); this used to be a 422.
+        pid = (await create_partner(client))["id"]  # PH: email + whatsapp
+        resp = await client.post(f"/api/v1/partners/{pid}/outreach", json={})
+        assert resp.status_code == 201, resp.text
+        msgs = resp.json()
+        assert {m["channel"] for m in msgs} == {"email", "whatsapp"}
+        assert all(m["status"] == "draft" for m in msgs)
+
+    async def test_generate_for_one_channel_respects_limit(self, client: AsyncClient):
+        pid = (await create_partner(client))["id"]
+        resp = await client.post(
+            f"/api/v1/partners/{pid}/outreach", json={"channels": ["whatsapp"]}
+        )
+        assert resp.status_code == 201, resp.text
+        msgs = resp.json()
+        assert msgs and {m["channel"] for m in msgs} == {"whatsapp"}
+        assert all(len(m["body"]) <= 300 for m in msgs)
+
+    async def test_unknown_channel_is_422(self, client: AsyncClient):
+        pid = (await create_partner(client))["id"]
+        resp = await client.post(f"/api/v1/partners/{pid}/outreach", json={"channels": ["fax"]})
+        assert resp.status_code == 422

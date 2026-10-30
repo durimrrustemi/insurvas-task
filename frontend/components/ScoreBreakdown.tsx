@@ -17,6 +17,7 @@ export function ScoreBreakdown({ partner, signals }: { partner: Partner; signals
   const router = useRouter();
   const [scoring, setScoring] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const grouped: Record<string, Signal[]> = {};
   for (const s of signals) {
@@ -25,11 +26,12 @@ export function ScoreBreakdown({ partner, signals }: { partner: Partner; signals
 
   async function handleScore() {
     setScoring(true);
+    setError(null);
     try {
       await scorePartner(partner.id);
       router.refresh();
     } catch (e) {
-      console.error("Score failed:", e);
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setScoring(false);
     }
@@ -47,6 +49,8 @@ export function ScoreBreakdown({ partner, signals }: { partner: Partner; signals
           {scoring ? "Scoring..." : "Re-score"}
         </button>
       </div>
+
+      {error && <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
       <div className="mb-4">
         <ScoreBar score={partner.score_total} label="Total" />

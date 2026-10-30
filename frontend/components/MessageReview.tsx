@@ -18,25 +18,28 @@ export function MessageReview({ partnerId, messages }: { partnerId: string; mess
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
   const [editSubject, setEditSubject] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   async function handleGenerate() {
     setGenerating(true);
+    setError(null);
     try {
       await generateOutreach(partnerId);
       router.refresh();
     } catch (e) {
-      console.error("Generate failed:", e);
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setGenerating(false);
     }
   }
 
   async function handleStatusChange(messageId: string, status: string) {
+    setError(null);
     try {
       await updateMessage(messageId, { status });
       router.refresh();
     } catch (e) {
-      console.error("Status update failed:", e);
+      setError(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -55,7 +58,7 @@ export function MessageReview({ partnerId, messages }: { partnerId: string; mess
       setEditingId(null);
       router.refresh();
     } catch (e) {
-      console.error("Edit failed:", e);
+      setError(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -77,6 +80,8 @@ export function MessageReview({ partnerId, messages }: { partnerId: string; mess
           {generating ? "Generating..." : "Generate outreach"}
         </button>
       </div>
+
+      {error && <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
       {messages.length === 0 ? (
         <p className="text-sm text-gray-500">

@@ -28,3 +28,7 @@ class MessageUpdate(BaseModel):
     subject: str | None = None
     body: str | None = None
     status: MessageStatus | None = None
+
+
+class OutreachRequest(BaseModel):
+    channels: list[Channel] | None = None

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.models.partner import Blocker, Stage
-from app.schemas.message import MessageRead
+from app.schemas.message import MessageRead, OutreachRequest
 from app.schemas.partner import (
     PartnerCreate,
     PartnerList,
@@ -109,9 +109,10 @@ async def score_partner(
 )
 async def generate_outreach(
     partner_id: uuid.UUID,
-    channels: list[str] | None = None,
+    data: OutreachRequest | None = None,
     session: AsyncSession = Depends(get_session),
 ):
+    channels = [c.value for c in data.channels] if data and data.channels else None
     messages = await outreach_service.generate_outreach(session, partner_id, channels)
     await session.commit()
     return [MessageRead.model_validate(m) for m in messages]
