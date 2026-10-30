@@ -17,6 +17,7 @@ from app.models.partner import Partner
 from app.models.signal import Signal
 from app.scoring import ScoreResult
 from app.scoring.extract_signals import extract_all_signals
+from app.scoring.gates import GATE_CRITERION
 from app.scoring.score import compute_scores
 from app.services.partners import get_partner
 
@@ -39,8 +40,10 @@ async def score_partner(
     # Compute scores (pure function)
     score_result = compute_scores(signal_results, app_config)
 
-    # Persist: delete old signals, insert new
-    await session.execute(delete(Signal).where(Signal.partner_id == partner_id))
+    # Persist: replace extracted signals; manual gate decisions survive a rescore
+    await session.execute(
+        delete(Signal).where(Signal.partner_id == partner_id, Signal.criterion != GATE_CRITERION)
+    )
 
     for sr in signal_results:
         signal = Signal(

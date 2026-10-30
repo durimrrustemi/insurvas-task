@@ -1,7 +1,7 @@
 const isServer = typeof window === "undefined";
 const API_BASE = isServer
-  ? (process.env.API_URL || "http://api:8000")
-  : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000");
+  ? process.env.API_URL || "http://api:8000"
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}/api/v1${path}`;
@@ -142,7 +142,10 @@ export async function transitionStage(partnerId: string, to: string, reason?: st
   });
 }
 
-export async function updateMessage(messageId: string, data: { status?: string; body?: string; subject?: string }) {
+export async function updateMessage(
+  messageId: string,
+  data: { status?: string; body?: string; subject?: string },
+) {
   return apiFetch(`/messages/${messageId}`, {
     method: "PATCH",
     body: JSON.stringify(data),
@@ -199,9 +202,54 @@ export async function getDiscoveryRuns() {
   return apiFetch<Array<Record<string, unknown>>>("/discovery/runs");
 }
 
-export async function createActivity(partnerId: string, data: { kind: string; channel?: string; body?: string }) {
+export async function createActivity(
+  partnerId: string,
+  data: { kind: string; channel?: string; body?: string },
+) {
   return apiFetch(`/partners/${partnerId}/activities`, {
     method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export interface ReadinessCheck {
+  key: string;
+  label: string;
+  ok: boolean;
+}
+
+export interface TransitionReadiness {
+  to: string;
+  ready: boolean;
+  checks: ReadinessCheck[];
+}
+
+export interface PartnerReadiness {
+  gates: Record<string, "confirmed" | "unknown" | "no">;
+  transitions: TransitionReadiness[];
+}
+
+export async function getReadiness(partnerId: string): Promise<PartnerReadiness> {
+  return apiFetch<PartnerReadiness>(`/partners/${partnerId}/readiness`);
+}
+
+export async function setGate(partnerId: string, gate: string, confirmed: boolean) {
+  return apiFetch(`/partners/${partnerId}/signals`, {
+    method: "POST",
+    body: JSON.stringify({ criterion: "gate", key: gate, value: confirmed ? 1 : 0 }),
+  });
+}
+
+export async function updatePartner(
+  partnerId: string,
+  data: {
+    blocker?: string | null;
+    engagement_terms?: Record<string, unknown>;
+    owner_note?: string;
+  },
+): Promise<Partner> {
+  return apiFetch<Partner>(`/partners/${partnerId}`, {
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 }

@@ -12,6 +12,7 @@ from app.schemas.partner import (
     PartnerCreate,
     PartnerList,
     PartnerRead,
+    PartnerReadiness,
     PartnerUpdate,
     StageTransition,
 )
@@ -114,6 +115,14 @@ async def generate_outreach(
     messages = await outreach_service.generate_outreach(session, partner_id, channels)
     await session.commit()
     return [MessageRead.model_validate(m) for m in messages]
+
+
+@router.get("/{partner_id}/readiness", response_model=PartnerReadiness)
+async def get_readiness(
+    partner_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    return await partner_service.get_readiness(session, partner_id)
 
 
 @router.post("/{partner_id}/stage", response_model=PartnerRead)

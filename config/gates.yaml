@@ -20,7 +20,8 @@ gates:
     description: Basic compliance posture (TCPA awareness minimum)
     evidence_keywords:
       - tcpa
-      - complian
+      - compliance
+      - compliant
       - consent
       - dnc
       - do not call

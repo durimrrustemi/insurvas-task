@@ -1,4 +1,11 @@
-import { getPartner, getSignals, getContacts, getMessages, getActivities } from "@/lib/api";
+import {
+  getPartner,
+  getSignals,
+  getContacts,
+  getMessages,
+  getActivities,
+  getReadiness,
+} from "@/lib/api";
 import { StageBadge } from "@/components/StageBadge";
 import { ScoreBreakdown } from "@/components/ScoreBreakdown";
 import { MessageReview } from "@/components/MessageReview";
@@ -6,20 +13,17 @@ import { StageActions } from "@/components/StageActions";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 
-export default async function PartnerDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function PartnerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  let partner, signals, contacts, messages, activities;
+  let partner, signals, contacts, messages, activities, readiness;
   try {
-    [partner, signals, contacts, messages, activities] = await Promise.all([
+    [partner, signals, contacts, messages, activities, readiness] = await Promise.all([
       getPartner(id),
       getSignals(id),
       getContacts(id),
       getMessages(id),
       getActivities(id),
+      getReadiness(id),
     ]);
   } catch {
     return (
@@ -53,7 +57,7 @@ export default async function PartnerDetailPage({
       )}
 
       {/* Stage actions + readiness checklist */}
-      <StageActions partner={partner} signals={signals} contacts={contacts} />
+      <StageActions partner={partner} readiness={readiness} />
 
       {/* Score breakdown with expandable evidence */}
       <ScoreBreakdown partner={partner} signals={signals} />
@@ -73,7 +77,12 @@ export default async function PartnerDetailPage({
                   {c.email && <span className="mr-3">{c.email}</span>}
                   {c.whatsapp && <span className="mr-3">WA: {c.whatsapp}</span>}
                   {c.linkedin_url && (
-                    <a href={c.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
+                    <a
+                      href={c.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500"
+                    >
                       LinkedIn
                     </a>
                   )}
@@ -112,7 +121,12 @@ export default async function PartnerDetailPage({
           <dt className="text-gray-500">Website</dt>
           <dd>
             {partner.website ? (
-              <a href={partner.website} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+              <a
+                href={partner.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline"
+              >
                 {partner.website}
               </a>
             ) : (

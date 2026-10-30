@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_session
 from app.models.signal import Signal
 from app.schemas.signal import SignalCreate, SignalRead, SignalUpdate
+from app.scoring.gates import GATE_CRITERION
+from app.services import partners as partner_service
 
 router = APIRouter(tags=["signals"])
 
@@ -19,7 +21,9 @@ async def list_signals(
     session: AsyncSession = Depends(get_session),
 ):
     result = await session.execute(
-        select(Signal).where(Signal.partner_id == partner_id).order_by(Signal.criterion, Signal.key)
+        select(Signal)
+        .where(Signal.partner_id == partner_id)
+        .order_by(Signal.criterion, Signal.key, Signal.created_at)
     )
     return [SignalRead.model_validate(s) for s in result.scalars().all()]
 
@@ -30,8 +34,14 @@ async def create_signal(
     data: SignalCreate,
     session: AsyncSession = Depends(get_session),
 ):
-    signal = Signal(partner_id=partner_id, **data.model_dump())
-    session.add(signal)
+    if data.criterion == GATE_CRITERION:
+        signal = await partner_service.set_gate(
+            session, partner_id, data.key, data.value >= 0.5, data.source_url
+        )
+    else:
+        await partner_service.get_partner(session, partner_id)
+        signal = Signal(partner_id=partner_id, **data.model_dump())
+        session.add(signal)
     await session.commit()
     return SignalRead.model_validate(signal)
 

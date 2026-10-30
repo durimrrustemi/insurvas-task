@@ -58,6 +58,27 @@ class StageTransition(BaseModel):
     reason: str | None = None
 
 
+class CheckRead(BaseModel):
+    key: str
+    label: str
+    ok: bool
+
+    model_config = {"from_attributes": True}
+
+
+class TransitionReadiness(BaseModel):
+    to: Stage
+    ready: bool
+    checks: list[CheckRead]
+
+    model_config = {"from_attributes": True}
+
+
+class PartnerReadiness(BaseModel):
+    gates: dict[str, str]
+    transitions: list[TransitionReadiness]
+
+
 class PartnerList(BaseModel):
     items: list[PartnerRead]
     total: int

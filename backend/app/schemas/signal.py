@@ -10,7 +10,7 @@ class SignalCreate(BaseModel):
     criterion: str
     key: str
     value: float
-    weight: float
+    weight: float = 0.0
     source_url: str | None = None
     matched_text: str | None = None
 

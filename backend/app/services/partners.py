@@ -1,25 +1,22 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import asdict
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.errors import Conflict, InvalidTransition, NotFound
+from app import rules
+from app.config import app_config
+from app.errors import Conflict, GateBlocked, InvalidTransition, NotFound
 from app.models.activity import Activity, ActivityKind
+from app.models.contact import Contact
 from app.models.partner import Blocker, Partner, Stage
+from app.models.signal import Signal
 from app.schemas.partner import PartnerCreate, PartnerUpdate
-
-ALLOWED_TRANSITIONS: dict[Stage, list[Stage]] = {
-    Stage.FOUND: [Stage.CONTACTED, Stage.LOST],
-    Stage.CONTACTED: [Stage.REPLIED, Stage.LOST],
-    Stage.REPLIED: [Stage.IN_TALKS, Stage.LOST],
-    Stage.IN_TALKS: [Stage.TEST_CALLS, Stage.LOST],
-    Stage.TEST_CALLS: [Stage.SIGNED, Stage.LOST],
-    Stage.SIGNED: [Stage.LOST],
-    Stage.LOST: [Stage.FOUND],
-}
+from app.scoring import SignalResult
+from app.scoring.gates import GATE_CRITERION, GateStatus, evaluate_gates
 
 
 def normalise_domain(raw: str) -> str:
@@ -106,6 +103,16 @@ async def update_partner(
 ) -> Partner:
     partner = await get_partner(session, partner_id)
     update_data = data.model_dump(exclude_unset=True)
+    if "blocker" in update_data and update_data["blocker"] != partner.blocker:
+        new = update_data["blocker"]
+        session.add(
+            Activity(
+                partner_id=partner.id,
+                kind=ActivityKind.BLOCKER,
+                body=f"blocker: {new.value if new else 'cleared'}",
+                at=datetime.now(timezone.utc),
+            )
+        )
     for key, value in update_data.items():
         setattr(partner, key, value)
     await session.flush()
@@ -118,6 +125,51 @@ async def delete_partner(session: AsyncSession, partner_id: uuid.UUID) -> None:
     await session.flush()
 
 
+async def _signal_results(session: AsyncSession, partner_id: uuid.UUID) -> list[SignalResult]:
+    result = await session.execute(
+        select(Signal).where(Signal.partner_id == partner_id).order_by(Signal.created_at, Signal.id)
+    )
+    return [
+        SignalResult(
+            criterion=s.criterion,
+            key=s.key,
+            value=s.value,
+            weight=s.weight,
+            source_url=s.source_url or "",
+            matched_text=s.matched_text or "",
+        )
+        for s in result.scalars().all()
+    ]
+
+
+async def _readiness(session: AsyncSession, partner: Partner, to_stage: str) -> rules.Readiness:
+    contacts = await session.execute(select(Contact.name).where(Contact.partner_id == partner.id))
+    return rules.readiness(
+        to_stage,
+        gates=app_config.gates,
+        signals=await _signal_results(session, partner.id),
+        contact_names=[n or "" for n in contacts.scalars().all()],
+        terms=partner.engagement_terms,
+    )
+
+
+async def get_readiness(session: AsyncSession, partner_id: uuid.UUID) -> dict:
+    """Gate statuses plus readiness for every stage the partner can move to next."""
+    partner = await get_partner(session, partner_id)
+    signals = await _signal_results(session, partner.id)
+    next_stages = rules.ALLOWED_TRANSITIONS.get(partner.stage.value, [])
+    return {
+        "gates": {k: v.value for k, v in evaluate_gates(app_config.gates, signals).items()},
+        "transitions": [
+            _readiness_dict(await _readiness(session, partner, to)) for to in next_stages
+        ],
+    }
+
+
+def _readiness_dict(r: rules.Readiness) -> dict:
+    return {"to": r.to, "ready": r.ready, "checks": [asdict(c) for c in r.checks]}
+
+
 async def transition(
     session: AsyncSession,
     partner_id: uuid.UUID,
@@ -125,15 +177,18 @@ async def transition(
     reason: str | None = None,
 ) -> Partner:
     partner = await get_partner(session, partner_id)
-    allowed = ALLOWED_TRANSITIONS.get(partner.stage, [])
-    if to_stage not in allowed:
+    if not rules.is_allowed(partner.stage.value, to_stage.value):
+        allowed = rules.ALLOWED_TRANSITIONS.get(partner.stage.value, [])
         raise InvalidTransition(
             f"Cannot transition from {partner.stage.value} to {to_stage.value}",
-            details={
-                "from": partner.stage.value,
-                "to": to_stage.value,
-                "allowed": [s.value for s in allowed],
-            },
+            details={"from": partner.stage.value, "to": to_stage.value, "allowed": allowed},
+        )
+
+    check = await _readiness(session, partner, to_stage.value)
+    if not check.ready:
+        raise GateBlocked(
+            f"Not ready for {to_stage.value}: " + ", ".join(c.label for c in check.failed),
+            details={"to": to_stage.value, "failed": [c.key for c in check.failed]},
         )
 
     now = datetime.now(timezone.utc)
@@ -150,3 +205,41 @@ async def transition(
     session.add(activity)
     await session.flush()
     return partner
+
+
+async def set_gate(
+    session: AsyncSession,
+    partner_id: uuid.UUID,
+    gate: str,
+    confirmed: bool,
+    source: str | None = None,
+) -> Signal:
+    """Record a manual gate decision. A `no` moves the partner to lost with reason gate:<name>."""
+    if gate not in app_config.gates:
+        raise NotFound(f"Gate {gate} not found", details={"known": list(app_config.gates)})
+    partner = await get_partner(session, partner_id)
+
+    signal = Signal(
+        partner_id=partner.id,
+        criterion=GATE_CRITERION,
+        key=gate,
+        value=1.0 if confirmed else 0.0,
+        weight=0.0,
+        source_url=source,
+        matched_text=f"manual: {GateStatus.CONFIRMED if confirmed else GateStatus.NO}",
+    )
+    session.add(signal)
+    session.add(
+        Activity(
+            partner_id=partner.id,
+            kind=ActivityKind.NOTE,
+            body=f"gate {gate}: {'confirmed' if confirmed else 'no'}"
+            + (f" (source: {source})" if source else ""),
+            at=datetime.now(timezone.utc),
+        )
+    )
+    await session.flush()
+
+    if not confirmed and partner.stage != Stage.LOST:
+        await transition(session, partner.id, Stage.LOST, reason=f"gate:{gate}")
+    return signal
