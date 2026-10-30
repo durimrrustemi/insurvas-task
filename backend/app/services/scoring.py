@@ -15,7 +15,7 @@ from app.discovery.fetch import CACHE_DIR
 from app.models.page import Page
 from app.models.partner import Partner
 from app.models.signal import Signal
-from app.scoring import ScoreResult
+from app.scoring import ScoreResult, SignalResult
 from app.scoring.extract_signals import extract_all_signals
 from app.scoring.gates import GATE_CRITERION
 from app.scoring.score import compute_scores
@@ -57,13 +57,7 @@ async def score_partner(
         )
         session.add(signal)
 
-    # Update partner score columns
-    partner.score_total = score_result.total
-    partner.score_english = _criterion_score(score_result, "english")
-    partner.score_insurance = _criterion_score(score_result, "insurance")
-    partner.score_size = _criterion_score(score_result, "size")
-    partner.score_compliance = _criterion_score(score_result, "compliance")
-
+    _apply_scores(partner, score_result)
     await session.flush()
 
     logger.info(
@@ -74,6 +68,54 @@ async def score_partner(
         len(signal_results),
     )
     return score_result
+
+
+def _apply_scores(partner: Partner, result: ScoreResult) -> None:
+    partner.score_total = result.total
+    partner.score_english = _criterion_score(result, "english")
+    partner.score_insurance = _criterion_score(result, "insurance")
+    partner.score_size = _criterion_score(result, "size")
+    partner.score_compliance = _criterion_score(result, "compliance")
+
+
+async def recompute_scores(session: AsyncSession, country: str | None = None) -> int:
+    """Re-run the formula on stored evidence with the current config weights.
+
+    No fetching or extraction: use after editing scoring.yaml. Signal weights are
+    refreshed from config for known keys so the evidence UI shows what was used.
+    """
+    q = select(Partner)
+    if country:
+        q = q.where(Partner.country == country)
+    partners = list((await session.execute(q)).scalars().all())
+
+    for partner in partners:
+        rows = (
+            await session.execute(
+                select(Signal).where(
+                    Signal.partner_id == partner.id, Signal.criterion != GATE_CRITERION
+                )
+            )
+        ).scalars()
+        results = []
+        for row in rows:
+            cfg = app_config.signals.get(row.criterion, {}).get(row.key)
+            if cfg:
+                row.weight = cfg.weight
+            results.append(
+                SignalResult(
+                    criterion=row.criterion,
+                    key=row.key,
+                    value=row.value,
+                    weight=row.weight,
+                    source_url=row.source_url or "",
+                    matched_text=row.matched_text or "",
+                )
+            )
+        _apply_scores(partner, compute_scores(results, app_config))
+
+    await session.flush()
+    return len(partners)
 
 
 async def score_all_partners(

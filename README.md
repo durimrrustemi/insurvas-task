@@ -13,7 +13,7 @@ docker compose up
 ```
 
 - Web: http://localhost:3000 · API docs: http://localhost:8000/docs
-- First start runs the migrations and seeds 30 clearly synthetic partners (`example-bpo-N.test`). Later starts skip the seed.
+- First start runs the migrations and seeds 30 clearly synthetic partners (`example-bpo-N.test`). Their evidence uses the real signal keys and their scores the real formula. Later starts skip the seed; `docker compose down -v` resets.
 - Port clash? Set `DB_PORT`, `API_PORT`, `WEB_PORT` in `.env`.
 
 Works without any API keys: `MOCK_LLM=1` returns canned LLM output, and discovery simply finds nothing without search keys.
@@ -31,7 +31,8 @@ Works without any API keys: `MOCK_LLM=1` returns canned LLM output, and discover
 make test                       # backend pytest (Postgres, rollback per test) + frontend lint
 make lint                       # ruff, mypy --strict on scoring/outreach/rules, eslint, tsc, prettier
 make discover COUNTRY=PH LIMIT=15
-make score COUNTRY=PH
+make score COUNTRY=PH            # re-extract signals from cached pages
+make recompute                  # re-apply scoring.yaml weights to stored evidence
 ```
 
 Everything runs inside the containers, so no local Python or Node is needed. CI runs the same checks on every push (`.github/workflows/ci.yml`).
@@ -61,11 +62,11 @@ Unknown is `None`, never 0. The weights in `config/scoring.yaml` are priors: the
 
 ## Changing behaviour
 
-Config is loaded once at startup, so edit the YAML and restart the API with `docker compose restart api`.
+Config is loaded once at startup. In dev the API restarts by itself when a YAML file in `config/` changes.
 
 - **Add a country**: add an entry in `config/countries.yaml` (code, english_baseline, timezone, channels, cities).
 - **Change the reminder**: `reminder_days` in `config/cadence.yaml`.
-- **Change a weight**: `config/scoring.yaml`, then `make score` to re-rank.
+- **Change a weight**: `config/scoring.yaml`, then `make recompute` to re-rank from the stored evidence (no crawling). `make score` re-extracts signals from cached pages instead.
 - **Add a signal**: add a weight entry under its criterion in `config/scoring.yaml` and the detection in `backend/app/scoring/signals/<criterion>.py`.
 - **Add a source**: a class with `async search(query, country) -> list[Candidate]` in `backend/app/discovery/sources/` (the `Source` protocol), registered in `discovery/runner.py`.
 - **Add a gate**: an entry in `config/gates.yaml` with `evidence_keywords` and `required_before`.

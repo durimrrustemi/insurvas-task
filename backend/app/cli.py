@@ -64,6 +64,9 @@ def discover(
 def score(
     country: str = typer.Option(None, help="Country code to filter (optional)"),
     partner_id: str = typer.Option(None, "--partner", "-p", help="Score a single partner by ID"),
+    recompute: bool = typer.Option(
+        False, "--recompute", help="Only re-apply current config weights to stored evidence"
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ):
     """Score partners based on cached page content."""
@@ -74,10 +77,14 @@ def score(
 
     async def _score():
         from app.db import async_session
-        from app.services.scoring import score_all_partners, score_partner
+        from app.services.scoring import recompute_scores, score_all_partners, score_partner
 
         async with async_session() as session:
-            if partner_id:
+            if recompute:
+                count = await recompute_scores(session, country=country)
+                await session.commit()
+                typer.echo(f"Recomputed {count} partners with current weights")
+            elif partner_id:
                 import uuid
 
                 result = await score_partner(session, uuid.UUID(partner_id))

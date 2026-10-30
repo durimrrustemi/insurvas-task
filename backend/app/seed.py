@@ -5,10 +5,13 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import app_config
 from app.models.activity import Activity, ActivityKind
 from app.models.contact import Contact
 from app.models.partner import Blocker, Partner, PartnerType, Stage
 from app.models.signal import Signal
+from app.scoring import SignalResult
+from app.scoring.score import compute_scores
 
 COUNTRIES = ["PH", "IN", "ZA", "JM", "GH", "KE"]
 CITIES = {
@@ -66,12 +69,6 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
         elif i == 12:
             blocker = Blocker.NO_RESPONSE
 
-        score_total = round(rng.uniform(0.2, 0.95), 2) if stage != Stage.FOUND else None
-        score_english = round(rng.uniform(0.3, 1.0), 2) if score_total else None
-        score_insurance = round(rng.uniform(0.1, 0.9), 2) if score_total else None
-        score_size = round(rng.uniform(0.2, 0.8), 2) if score_total else None
-        score_compliance = round(rng.uniform(0.0, 0.7), 2) if score_total else None
-
         partner = Partner(
             name=name,
             domain=domain,
@@ -83,11 +80,6 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
             stage=stage,
             stage_entered_at=stage_entered,
             blocker=blocker,
-            score_total=score_total,
-            score_english=score_english,
-            score_insurance=score_insurance,
-            score_size=score_size,
-            score_compliance=score_compliance,
         )
         session.add(partner)
         partners.append(partner)
@@ -105,21 +97,28 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
             )
             session.add(contact)
 
-    # Add some signals
-    criteria = ["english", "insurance", "size", "compliance"]
+    # Synthetic evidence using the real signal keys and weights from scoring.yaml,
+    # scored with the real formula, so every shown score traces back to its rows
+    # and a weight change + `make recompute` re-ranks the seed like real data.
     for p in partners:
-        if p.score_total is not None:
-            for criterion in rng.sample(criteria, k=rng.randint(1, 4)):
-                signal = Signal(
+        results = _synthetic_signals(rng, p)
+        for r in results:
+            session.add(
+                Signal(
                     partner_id=p.id,
-                    criterion=criterion,
-                    key=f"seed_{criterion}_signal",
-                    value=round(rng.uniform(0.2, 1.0), 2),
-                    weight=round(rng.uniform(0.5, 3.0), 2),
-                    source_url=f"https://{p.domain}/about",
-                    matched_text=f"Seed {criterion} evidence for {p.name}",
+                    criterion=r.criterion,
+                    key=r.key,
+                    value=r.value,
+                    weight=r.weight,
+                    source_url=r.source_url,
+                    matched_text=r.matched_text,
                 )
-                session.add(signal)
+            )
+        scores = compute_scores(results, app_config)
+        p.score_total = scores.total
+        for criterion in ("english", "insurance", "size", "compliance"):
+            c = scores.criteria.get(criterion)
+            setattr(p, f"score_{criterion}", c.score if c and c.coverage > 0 else None)
 
     # Add activities
     for p in partners:
@@ -133,3 +132,32 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
 
     await session.commit()
     return partners
+
+
+def _synthetic_signals(rng: random.Random, p: Partner) -> list[SignalResult]:
+    country = app_config.get_country(p.country)
+    results = [
+        SignalResult(
+            criterion="english",
+            key="english_baseline",
+            value=country.english_baseline if country else 0.5,
+            weight=app_config.signals["english"]["english_baseline"].weight,
+            source_url="config/countries.yaml",
+            matched_text=f"Country baseline for {p.country}",
+        )
+    ]
+    criteria = ["english", "insurance", "size", "compliance"]
+    for criterion in rng.sample(criteria, k=rng.randint(1, 4)):
+        defs = {k: v for k, v in app_config.signals[criterion].items() if k != "english_baseline"}
+        for key in rng.sample(sorted(defs), k=min(len(defs), rng.randint(1, 2))):
+            results.append(
+                SignalResult(
+                    criterion=criterion,
+                    key=key,
+                    value=round(rng.uniform(0.3, 1.0), 2),
+                    weight=defs[key].weight,
+                    source_url=f"https://{p.domain}/about",
+                    matched_text=f"Synthetic evidence: {defs[key].description}",
+                )
+            )
+    return results

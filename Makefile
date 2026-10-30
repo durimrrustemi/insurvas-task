@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint fmt migrate seed discover score demo down
+.PHONY: setup dev test lint fmt migrate seed discover score recompute demo down
 
 API = docker compose run --rm api uv run
 WEB = docker compose run --rm --no-deps web
@@ -41,5 +41,9 @@ discover:
 
 score:
 	$(API) python -m app.cli score $(if $(COUNTRY),--country $(COUNTRY),) $(if $(PARTNER),--partner $(PARTNER),)
+
+# Re-apply scoring.yaml weights to stored evidence (no crawling). Restart the api first.
+recompute:
+	$(API) python -m app.cli score --recompute $(if $(COUNTRY),--country $(COUNTRY),)
 
 demo: setup dev
