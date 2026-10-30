@@ -52,6 +52,9 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
       API_URL: http://api:8000
+      # File events from Windows/macOS bind mounts often never reach the container;
+      # poll so edits show up without restarting the web container.
+      WATCHPACK_POLLING: "true"
     depends_on:
       - api
     command: pnpm dev --hostname 0.0.0.0
