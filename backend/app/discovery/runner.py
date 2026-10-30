@@ -83,7 +83,12 @@ async def run_discovery(
                 logger.exception("Source %s failed on query %r", type(source).__name__, query)
                 continue
             all_candidates.extend(results)
-            if len(all_candidates) >= limit * 3:
+            # Stop on usable candidates, not raw hits: directories and listicles
+            # are filtered out, so raw counts overestimate what a run will yield.
+            usable = dedupe_candidates(
+                all_candidates, config.exclude_domains, config.exclude_title_patterns
+            )
+            if len(usable) >= limit:
                 break
 
     logger.info(
@@ -94,7 +99,9 @@ async def run_discovery(
     )
 
     # 3. Deduplicate
-    unique = dedupe_candidates(all_candidates)[:limit]
+    unique = dedupe_candidates(
+        all_candidates, config.exclude_domains, config.exclude_title_patterns
+    )[:limit]
     logger.info(
         "Discovery %s: %d unique after dedupe (capped at %d)",
         country_code,

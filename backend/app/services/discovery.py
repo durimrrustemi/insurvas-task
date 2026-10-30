@@ -10,11 +10,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import app_config
+from app.discovery.dedupe import normalise_domain
 from app.discovery.runner import DiscoveryResult, run_discovery
 from app.models.discovery_run import DiscoveryRun
 from app.models.page import Page
 from app.models.partner import Partner, Stage
-from app.services.partners import normalise_domain
+from app.services.scoring import score_partner
 from app.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,14 @@ async def start_discovery(
         places_key=settings.google_places_key,
     )
 
-    new_count = await _persist_results(session, result)
+    new_count, partner_ids = await _persist_results(session, result)
+
+    # Score right away so new candidates show up ranked, with their evidence.
+    for pid in partner_ids:
+        try:
+            await score_partner(session, pid)
+        except Exception:
+            logger.exception("Scoring failed for discovered partner %s", pid)
 
     run.queries = result.queries_used
     run.found = result.total_found
@@ -64,9 +72,10 @@ async def start_discovery(
 async def _persist_results(
     session: AsyncSession,
     result: DiscoveryResult,
-) -> int:
+) -> tuple[int, list[uuid.UUID]]:
     """Upsert partners and pages from discovery results. Returns new count."""
     new_count = 0
+    partner_ids: list[uuid.UUID] = []
     now = datetime.now(timezone.utc)
 
     for enriched in result.candidates:
@@ -109,6 +118,8 @@ async def _persist_results(
             await session.flush()
             new_count += 1
 
+        partner_ids.append(partner.id)
+
         # Store homepage page record
         page = Page(
             partner_id=partner.id,
@@ -129,7 +140,7 @@ async def _persist_results(
             session.add(inner_page)
 
     await session.flush()
-    return new_count
+    return new_count, partner_ids
 
 
 async def get_discovery_run(session: AsyncSession, run_id: uuid.UUID) -> DiscoveryRun | None:

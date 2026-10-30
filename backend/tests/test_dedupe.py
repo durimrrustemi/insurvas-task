@@ -55,7 +55,7 @@ def test_dedupe_filters_blacklisted():
             name="Real BPO",
         ),
     ]
-    result = dedupe_candidates(candidates)
+    result = dedupe_candidates(candidates, exclude_domains=["linkedin.com"])
     assert len(result) == 1
     assert result[0].domain == "realbpo.com"
 
@@ -78,3 +78,32 @@ def test_dedupe_preserves_city():
     result = dedupe_candidates(candidates)
     assert len(result) == 1
     assert result[0].city == "Manila"
+
+
+def test_excluded_domain_matches_subdomains_only():
+    candidates = [
+        Candidate(url="https://en.wikipedia.org/wiki/BPO", domain="", name="BPO - Wikipedia"),
+        Candidate(url="https://notwikipedia.org", domain="", name="Not Wikipedia BPO"),
+    ]
+    result = dedupe_candidates(candidates, exclude_domains=["wikipedia.org"])
+    assert [c.domain for c in result] == ["notwikipedia.org"]
+
+
+def test_listicle_titles_are_dropped_with_config_patterns():
+    from app.config import load_config
+
+    cfg = load_config()
+    candidates = [
+        Candidate(url="https://a.test", domain="", name="Top 40 call centers in the Philippines"),
+        Candidate(url="https://b.test", domain="", name="10 Best BPO Companies in Cebu"),
+        Candidate(url="https://c.test", domain="", name="Acme Contact Center | Cebu BPO"),
+    ]
+    result = dedupe_candidates(candidates, cfg.exclude_domains, cfg.exclude_title_patterns)
+    assert [c.domain for c in result] == ["c.test"]
+
+
+def test_partner_domain_drops_path():
+    from app.services.partners import normalise_domain as partner_normalise
+
+    url = "https://www.outsourcing.test/guide/top-call-centers"
+    assert partner_normalise(url) == "outsourcing.test"

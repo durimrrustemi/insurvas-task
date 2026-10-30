@@ -16,3 +16,41 @@ templates:
   - "customer service outsourcing {country}"
 
 max_queries_per_country: 25
+
+# Results from these domains (and their subdomains) are never candidates:
+# social sites, job boards and BPO directories mention call centers but aren't one.
+exclude_domains:
+  - google.com
+  - facebook.com
+  - linkedin.com
+  - twitter.com
+  - x.com
+  - youtube.com
+  - instagram.com
+  - tiktok.com
+  - wikipedia.org
+  - yelp.com
+  - glassdoor.com
+  - indeed.com
+  - jobstreet.com
+  - bbb.org
+  - crunchbase.com
+  - bloomberg.com
+  - reddit.com
+  - quora.com
+  - medium.com
+  - amazon.com
+  - apple.com
+  - clutch.co
+  - goodfirms.co
+  - upwork.com
+  - outsourceaccelerator.com
+  - philippinescities.com
+  - g2.com
+  - trustpilot.com
+
+# Result titles matching these regexes are listicles or articles, not companies.
+exclude_title_patterns:
+  - "^(the )?(top|best) \\d+"
+  - "\\b(top|best) \\d+ .*(call cent|bpo|outsourc)"
+  - "^\\d+ (top|best)\\b"

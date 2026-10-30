@@ -33,6 +33,11 @@ async def score_partner(
 
     # Load page texts from cache
     texts = await _load_partner_texts(session, partner)
+    if not texts:
+        # Nothing to extract from (e.g. seed data, or pages never fetched): re-extracting
+        # would replace real evidence with a baseline-only score. Re-apply weights instead.
+        logger.info("No cached pages for %s; recomputing from stored evidence", partner.domain)
+        return await _recompute_partner(session, partner)
 
     # Extract signals (pure function)
     signal_results = extract_all_signals(texts, partner.country, app_config)
@@ -88,34 +93,38 @@ async def recompute_scores(session: AsyncSession, country: str | None = None) ->
     if country:
         q = q.where(Partner.country == country)
     partners = list((await session.execute(q)).scalars().all())
-
     for partner in partners:
-        rows = (
-            await session.execute(
-                select(Signal).where(
-                    Signal.partner_id == partner.id, Signal.criterion != GATE_CRITERION
-                )
-            )
-        ).scalars()
-        results = []
-        for row in rows:
-            cfg = app_config.signals.get(row.criterion, {}).get(row.key)
-            if cfg:
-                row.weight = cfg.weight
-            results.append(
-                SignalResult(
-                    criterion=row.criterion,
-                    key=row.key,
-                    value=row.value,
-                    weight=row.weight,
-                    source_url=row.source_url or "",
-                    matched_text=row.matched_text or "",
-                )
-            )
-        _apply_scores(partner, compute_scores(results, app_config))
-
-    await session.flush()
+        await _recompute_partner(session, partner)
     return len(partners)
+
+
+async def _recompute_partner(session: AsyncSession, partner: Partner) -> ScoreResult:
+    rows = (
+        await session.execute(
+            select(Signal).where(
+                Signal.partner_id == partner.id, Signal.criterion != GATE_CRITERION
+            )
+        )
+    ).scalars()
+    results = []
+    for row in rows:
+        cfg = app_config.signals.get(row.criterion, {}).get(row.key)
+        if cfg:
+            row.weight = cfg.weight
+        results.append(
+            SignalResult(
+                criterion=row.criterion,
+                key=row.key,
+                value=row.value,
+                weight=row.weight,
+                source_url=row.source_url or "",
+                matched_text=row.matched_text or "",
+            )
+        )
+    result = compute_scores(results, app_config)
+    _apply_scores(partner, result)
+    await session.flush()
+    return result
 
 
 async def score_all_partners(

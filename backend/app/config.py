@@ -50,6 +50,8 @@ class AppConfig:
     cadence: CadenceConfig | None = None
     query_templates: list[str] = field(default_factory=list)
     max_queries_per_country: int = 25
+    exclude_domains: list[str] = field(default_factory=list)
+    exclude_title_patterns: list[str] = field(default_factory=list)
 
     def get_country(self, code: str) -> CountryConfig | None:
         for c in self.countries:
@@ -110,6 +112,8 @@ def load_config() -> AppConfig:
         cadence=cadence,
         query_templates=queries_data["templates"],
         max_queries_per_country=queries_data.get("max_queries_per_country", 25),
+        exclude_domains=queries_data.get("exclude_domains", []),
+        exclude_title_patterns=queries_data.get("exclude_title_patterns", []),
     )
 
 

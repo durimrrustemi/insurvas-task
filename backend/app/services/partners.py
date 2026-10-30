@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import rules
 from app.config import app_config
+from app.discovery.dedupe import normalise_domain
 from app.errors import Conflict, GateBlocked, InvalidTransition, NotFound
 from app.models.activity import Activity, ActivityKind
 from app.models.contact import Contact
@@ -17,14 +18,6 @@ from app.models.signal import Signal
 from app.schemas.partner import PartnerCreate, PartnerUpdate
 from app.scoring import SignalResult
 from app.scoring.gates import GATE_CRITERION, GateStatus, evaluate_gates
-
-
-def normalise_domain(raw: str) -> str:
-    d = raw.lower().strip()
-    for prefix in ("https://", "http://", "www."):
-        if d.startswith(prefix):
-            d = d[len(prefix) :]
-    return d.rstrip("/")
 
 
 async def list_partners(

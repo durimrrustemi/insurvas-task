@@ -90,3 +90,25 @@ async def test_recompute_refreshes_signal_weight_from_config(session: AsyncSessi
 
     await scoring_service.recompute_scores(session)
     assert row.weight == 5.0
+
+
+async def test_score_without_pages_keeps_evidence(session: AsyncSession):
+    # Re-scoring a partner with no cached pages must not wipe its evidence.
+    p = Partner(name="No Pages BPO", domain="nopages.test", country="PH")
+    session.add(p)
+    await session.flush()
+    session.add(
+        Signal(
+            partner_id=p.id,
+            criterion="insurance",
+            key="final_expense_specific",
+            value=1.0,
+            weight=3.0,
+        )
+    )
+    await session.flush()
+
+    await scoring_service.score_partner(session, p.id)
+    keys = [s.key for s in await _rows(session, p)]
+    assert keys == ["final_expense_specific"]
+    assert p.score_total is not None
