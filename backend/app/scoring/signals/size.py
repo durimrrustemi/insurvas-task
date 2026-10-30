@@ -36,6 +36,8 @@ TWENTY_FOUR_SEVEN_PATTERNS = [
     r"24x7",
 ]
 
+PRICING_URL_KEYWORDS = ["pricing", "rates", "plans"]
+
 CAREERS_KEYWORDS = [
     "career",
     "job opening",
@@ -147,7 +149,30 @@ def extract_size_signals(
                 )
             )
 
+    # 6. Pricing page
+    pricing_cfg = signal_config.get("has_pricing_page")
+    if pricing_cfg:
+        url = _pricing_url(texts)
+        if url:
+            signals.append(
+                SignalResult(
+                    criterion=CRITERION,
+                    key="has_pricing_page",
+                    value=1.0,
+                    weight=pricing_cfg.weight,
+                    source_url=url,
+                    matched_text="Pricing page found",
+                )
+            )
+
     return signals
+
+
+def _pricing_url(texts: dict[str, str]) -> str:
+    for url in texts:
+        if any(kw in url.lower() for kw in PRICING_URL_KEYWORDS):
+            return url
+    return ""
 
 
 def _extract_seat_count(text: str) -> int | None:

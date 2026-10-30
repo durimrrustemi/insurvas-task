@@ -347,6 +347,17 @@ class TestSizeSignals:
         assert "years_in_business" in keys
 
 
+def test_pricing_page_signal():
+    from app.config import load_config
+
+    config = load_config()
+    found = extract_size_signals({"https://bpo.test/pricing": "Our rates"}, config)
+    missing = extract_size_signals({"https://bpo.test/about": "About us"}, config)
+    assert [s.key for s in found] == ["has_pricing_page"]
+    assert found[0].source_url == "https://bpo.test/pricing"
+    assert missing == []
+
+
 # --- Compliance signal tests ---
 
 

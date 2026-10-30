@@ -176,6 +176,8 @@ def find_inner_urls(html: str, base_url: str, max_pages: int = 3) -> list[str]:
         "insurance",
         "contact",
         "team",
+        "pricing",
+        "rates",
     ]
     found: list[str] = []
     seen: set[str] = set()
