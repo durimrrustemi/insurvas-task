@@ -21,7 +21,7 @@ channel_limits:
   linkedin:
     max_chars: 300
   whatsapp:
-    max_chars: 300
+    max_chars: 200
 
 reminder_days: 2
 stale_stage_days: 7
