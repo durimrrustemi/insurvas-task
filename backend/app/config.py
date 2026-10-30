@@ -49,6 +49,7 @@ class AppConfig:
     gates: dict[str, GateConfig] = field(default_factory=dict)
     cadence: CadenceConfig | None = None
     query_templates: list[str] = field(default_factory=list)
+    vendor_query_templates: list[str] = field(default_factory=list)
     max_queries_per_country: int = 25
     exclude_domains: list[str] = field(default_factory=list)
     exclude_title_patterns: list[str] = field(default_factory=list)
@@ -111,6 +112,7 @@ def load_config() -> AppConfig:
         gates=gates,
         cadence=cadence,
         query_templates=queries_data["templates"],
+        vendor_query_templates=queries_data.get("vendor_templates", []),
         max_queries_per_country=queries_data.get("max_queries_per_country", 25),
         exclude_domains=queries_data.get("exclude_domains", []),
         exclude_title_patterns=queries_data.get("exclude_title_patterns", []),

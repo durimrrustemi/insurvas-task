@@ -15,7 +15,7 @@ from app.scoring import SignalResult
 from app.scoring.gates import GATE_CRITERION
 from app.scoring.score import compute_scores
 
-COUNTRIES = ["PH", "IN", "ZA", "JM", "GH", "KE"]
+COUNTRIES = ["PH", "IN", "ZA", "JM", "GH", "KE", "US"]
 CITIES = {
     "PH": ["Manila", "Cebu", "Davao"],
     "IN": ["Bangalore", "Mumbai", "Delhi"],
@@ -23,6 +23,7 @@ CITIES = {
     "JM": ["Kingston"],
     "GH": ["Accra"],
     "KE": ["Nairobi"],
+    "US": ["Miami", "Dallas", "Phoenix"],
 }
 TIMEZONES = {
     "PH": "Asia/Manila",
@@ -31,6 +32,7 @@ TIMEZONES = {
     "JM": "America/Jamaica",
     "GH": "Africa/Accra",
     "KE": "Africa/Nairobi",
+    "US": "America/New_York",
 }
 STAGES = list(Stage)
 # Stages behind the gates (rules.py): seeded partners there have passed them.
@@ -49,6 +51,8 @@ BPO_NAMES = [
     "Fictitious Global BPO",
     "Specimen Outreach Co",
 ]
+# US partners in the seed are lead vendors, the type the US market mostly has.
+VENDOR_NAMES = ["Example Leads", "Demo Transfers", "Sample Lead Partners", "Mock Call Leads"]
 
 
 async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]:
@@ -60,7 +64,9 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
     for i in range(count):
         country = COUNTRIES[i % len(COUNTRIES)]
         city = rng.choice(CITIES[country])
-        name_base = BPO_NAMES[i % len(BPO_NAMES)]
+        is_vendor = country == "US"
+        names = VENDOR_NAMES if is_vendor else BPO_NAMES
+        name_base = names[i % len(names)]
         name = f"{name_base} {city} {i + 1}"
         domain = f"example-bpo-{i + 1}.test"
 
@@ -76,7 +82,7 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
             country=country,
             city=city,
             timezone=TIMEZONES[country],
-            type=PartnerType.BPO,
+            type=PartnerType.VENDOR if is_vendor else PartnerType.BPO,
             stage=stage,
             stage_entered_at=stage_entered,
             engagement_terms=_synthetic_terms(rng, stage),

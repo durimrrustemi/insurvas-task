@@ -82,3 +82,11 @@ countries:
     timezone: Pacific/Fiji
     preferred_channels: [email]
     cities: [Suva]
+
+  # Most insurance lead vendors are US-based; US BPOs are partners too.
+  - code: US
+    name: United States
+    english_baseline: 1.0
+    timezone: America/New_York
+    preferred_channels: [email, linkedin]
+    cities: [Miami, Dallas, Phoenix, Las Vegas, Tampa]

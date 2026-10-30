@@ -143,3 +143,22 @@ class TestFormatEvidence:
         ]
         result = format_evidence(signals)
         assert "source:" not in result
+
+
+async def test_vendor_drafts_ask_vendor_questions(cadence: CadenceConfig, monkeypatch):
+    from app.outreach import draft as draft_mod
+    from app.services.llm import DraftResponse
+
+    seen: list[dict] = []
+
+    async def fake_complete_json(prompt_name, prompt, variables, schema):
+        seen.append(variables)
+        prompt.format(**variables)  # every placeholder must be filled
+        return DraftResponse(subject="s", body="b")
+
+    monkeypatch.setattr(draft_mod, "complete_json", fake_complete_json)
+    await draft_mod.generate_drafts(
+        "Example Leads", "leads.test", "US", "angle", "evidence", ["email"], cadence, "vendor"
+    )
+    assert "lead vendor" in seen[0]["partner_kind"]
+    assert "price per transfer" in seen[0]["qualifying_questions"]

@@ -15,6 +15,16 @@ templates:
   - "call center outsourcing company {city} {country}"
   - "customer service outsourcing {country}"
 
+# Lead vendors sell live transfers and data leads rather than running campaigns
+# for you. Interleaved with the BPO templates so even a small run finds both.
+vendor_templates:
+  - "final expense live transfer vendor {country}"
+  - "insurance live transfers for sale {country}"
+  - "final expense leads provider {country}"
+  - "insurance lead generation company {city}"
+  - "pay per call insurance leads {country}"
+  - "senior life insurance leads vendor {country}"
+
 max_queries_per_country: 25
 
 # Results from these domains (and their subdomains) are never candidates:
@@ -46,6 +56,8 @@ exclude_domains:
   - upwork.com
   - outsourceaccelerator.com
   - philippinescities.com
+  - designrush.com
+  - themanifest.com
   - g2.com
   - trustpilot.com
 
@@ -54,3 +66,4 @@ exclude_title_patterns:
   - "^(the )?(top|best) \\d+"
   - "\\b(top|best) \\d+ .*(call cent|bpo|outsourc)"
   - "^\\d+ (top|best)\\b"
+  - "^(the )?(best|top) .*\\b(companies|providers|agencies)\\b"

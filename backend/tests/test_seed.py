@@ -59,3 +59,12 @@ async def test_attention_has_overdue_partners(client: AsyncClient, session: Asyn
     items = (await client.get("/api/v1/attention")).json()["items"]
     overdue = [i for i in items if any(r.startswith("no touch") for r in i["reasons"])]
     assert len(overdue) >= 3
+
+
+async def test_seed_has_vendors_in_the_us_only(session: AsyncSession):
+    from app.models.partner import PartnerType
+
+    partners = await seed_partners(session)
+    vendors = [p for p in partners if p.type == PartnerType.VENDOR]
+    assert vendors
+    assert all(p.country == "US" for p in vendors)

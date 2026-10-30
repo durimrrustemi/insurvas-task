@@ -3,10 +3,16 @@ import { StageBadge } from "@/components/StageBadge";
 import { formatScore } from "@/lib/utils";
 import Link from "next/link";
 
+const TYPE_FILTERS = [
+  { label: "All", value: "" },
+  { label: "BPOs", value: "bpo" },
+  { label: "Lead vendors", value: "vendor" },
+];
+
 export default async function PartnersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ country?: string; stage?: string; sort?: string }>;
+  searchParams: Promise<{ country?: string; stage?: string; type?: string; sort?: string }>;
 }) {
   const params = await searchParams;
   let data;
@@ -14,6 +20,7 @@ export default async function PartnersPage({
     data = await getPartners({
       country: params.country,
       stage: params.stage,
+      type: params.type,
       sort: params.sort || "score_total",
       limit: 50,
     });
@@ -32,11 +39,26 @@ export default async function PartnersPage({
         <span className="text-sm text-gray-500">{data.total} total</span>
       </div>
 
+      <div className="mb-4 flex gap-2 text-sm">
+        {TYPE_FILTERS.map((f) => (
+          <Link
+            key={f.label}
+            href={f.value ? `/partners?type=${f.value}` : "/partners"}
+            className={`rounded border px-3 py-1 ${
+              (params.type ?? "") === f.value ? "bg-gray-800 text-white" : "hover:bg-gray-50"
+            }`}
+          >
+            {f.label}
+          </Link>
+        ))}
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-gray-500">
               <th className="pb-2 pr-4">Name</th>
+              <th className="pb-2 pr-4">Type</th>
               <th className="pb-2 pr-4">Country</th>
               <th className="pb-2 pr-4">Stage</th>
               <th className="pb-2 pr-4">Score</th>
@@ -59,6 +81,7 @@ export default async function PartnersPage({
                   </Link>
                   <div className="text-xs text-gray-400">{partner.domain}</div>
                 </td>
+                <td className="py-2 pr-4">{partner.type === "vendor" ? "Lead vendor" : "BPO"}</td>
                 <td className="py-2 pr-4">{partner.country}</td>
                 <td className="py-2 pr-4">
                   <StageBadge stage={partner.stage} />

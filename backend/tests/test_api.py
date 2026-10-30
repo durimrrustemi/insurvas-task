@@ -68,6 +68,17 @@ class TestPartners:
             "blocker: pricing",
         ]
 
+    async def test_filter_by_type(self, client: AsyncClient):
+        await create_partner(client, "bpo.test")
+        resp = await client.post(
+            "/api/v1/partners",
+            json={"name": "Leads Co", "domain": "leads.test", "country": "US", "type": "vendor"},
+        )
+        assert resp.status_code == 201
+        vendors = (await client.get("/api/v1/partners?type=vendor")).json()
+        assert [p["domain"] for p in vendors["items"]] == ["leads.test"]
+        assert vendors["total"] == 1
+
     async def test_unknown_partner_is_404_with_error_shape(self, client: AsyncClient):
         resp = await client.get("/api/v1/partners/0190f000-0000-7000-8000-000000000000")
         assert resp.status_code == 404

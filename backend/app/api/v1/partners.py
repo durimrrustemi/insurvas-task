@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
-from app.models.partner import Blocker, Stage
+from app.models.partner import Blocker, PartnerType, Stage
 from app.schemas.message import MessageRead, OutreachRequest
 from app.schemas.partner import (
     PartnerCreate,
@@ -29,6 +29,7 @@ async def list_partners(
     country: str | None = Query(None),
     stage: Stage | None = Query(None),
     blocker: Blocker | None = Query(None),
+    type: PartnerType | None = Query(None),
     min_score: float | None = Query(None),
     sort: str = Query("score_total"),
     limit: int = Query(50, ge=1, le=200),
@@ -39,6 +40,7 @@ async def list_partners(
         country=country,
         stage=stage,
         blocker=blocker,
+        partner_type=type,
         min_score=min_score,
         sort=sort,
         limit=limit,

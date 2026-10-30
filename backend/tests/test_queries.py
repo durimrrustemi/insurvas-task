@@ -40,3 +40,15 @@ def test_build_queries_deduplicates():
     templates = ["BPO {country}", "bpo {country}"]
     queries = build_queries(_ph(), templates, max_queries=25)
     assert len(queries) == 1
+
+
+def test_vendor_queries_are_interleaved_with_bpo_queries():
+    from app.config import load_config
+    from app.discovery.queries import build_queries_from_config, interleave
+
+    assert interleave(["a1", "a2", "a3"], ["b1"]) == ["a1", "b1", "a2", "a3"]
+
+    queries = build_queries_from_config(load_config(), "US")
+    assert len(queries) <= 25
+    # A run that stops after a few queries still searches for vendors.
+    assert any("lead" in q.lower() or "transfer" in q.lower() for q in queries[:4])

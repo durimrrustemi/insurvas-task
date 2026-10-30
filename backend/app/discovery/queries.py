@@ -46,8 +46,15 @@ def build_queries_from_config(config: AppConfig, country_code: str) -> list[str]
     country = config.get_country(country_code)
     if not country:
         raise ValueError(f"Unknown country code: {country_code}")
-    return build_queries(
-        country,
-        config.query_templates,
-        config.max_queries_per_country,
-    )
+    cap = config.max_queries_per_country
+    bpo = build_queries(country, config.query_templates, cap)
+    vendor = build_queries(country, config.vendor_query_templates, cap)
+    return interleave(bpo, vendor)[:cap]
+
+
+def interleave(a: list[str], b: list[str]) -> list[str]:
+    """a0, b0, a1, b1, ... so a run that stops early still covers both lists."""
+    out: list[str] = []
+    for i in range(max(len(a), len(b))):
+        out.extend(x[i] for x in (a, b) if i < len(x))
+    return out

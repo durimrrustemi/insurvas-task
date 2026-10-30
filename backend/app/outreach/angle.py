@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from app.prompts.angle_v1 import ANGLE_V1
+from app.prompts.angle_v2 import ANGLE_V2
+from app.prompts.draft_v2 import PARTNER_KINDS
 from app.scoring import SignalResult
 from app.services.llm import AngleResponse, complete_json
 
@@ -27,6 +28,7 @@ async def generate_angle(
     partner_domain: str,
     partner_country: str,
     signals: list[SignalResult],
+    partner_type: str = "bpo",
 ) -> str:
     """Generate a one-sentence angle using LLM."""
     evidence = format_evidence(signals)
@@ -34,11 +36,12 @@ async def generate_angle(
         "partner_name": partner_name,
         "partner_domain": partner_domain,
         "partner_country": partner_country,
+        "partner_kind": PARTNER_KINDS[partner_type],
         "evidence": evidence,
     }
     result = await complete_json(
-        prompt_name="ANGLE_V1",
-        prompt=ANGLE_V1,
+        prompt_name="ANGLE_V2",
+        prompt=ANGLE_V2,
         variables=variables,
         schema=AngleResponse,
     )

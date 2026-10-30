@@ -63,6 +63,7 @@ async def generate_outreach(
         partner_domain=partner.domain,
         partner_country=partner.country,
         signals=signal_results,
+        partner_type=partner.type.value,
     )
 
     # Generate drafts
@@ -79,6 +80,7 @@ async def generate_outreach(
         evidence_text=evidence_text,
         channels=channels,
         cadence=cadence,
+        partner_type=partner.type.value,
     )
 
     # Collect signal IDs for evidence linking

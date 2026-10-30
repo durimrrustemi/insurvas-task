@@ -13,7 +13,7 @@ from app.discovery.dedupe import normalise_domain
 from app.errors import Conflict, GateBlocked, InvalidTransition, NotFound
 from app.models.activity import Activity, ActivityKind
 from app.models.contact import Contact
-from app.models.partner import Blocker, Partner, Stage
+from app.models.partner import Blocker, Partner, PartnerType, Stage
 from app.models.signal import Signal
 from app.schemas.partner import PartnerCreate, PartnerUpdate
 from app.scoring import SignalResult
@@ -26,6 +26,7 @@ async def list_partners(
     country: str | None = None,
     stage: Stage | None = None,
     blocker: Blocker | None = None,
+    partner_type: PartnerType | None = None,
     min_score: float | None = None,
     sort: str = "score_total",
     limit: int = 50,
@@ -43,6 +44,9 @@ async def list_partners(
     if blocker:
         q = q.where(Partner.blocker == blocker)
         count_q = count_q.where(Partner.blocker == blocker)
+    if partner_type:
+        q = q.where(Partner.type == partner_type)
+        count_q = count_q.where(Partner.type == partner_type)
     if min_score is not None:
         q = q.where(Partner.score_total >= min_score)
         count_q = count_q.where(Partner.score_total >= min_score)

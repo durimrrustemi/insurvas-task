@@ -101,6 +101,7 @@ export interface Activity {
 export async function getPartners(params?: {
   country?: string;
   stage?: string;
+  type?: string;
   sort?: string;
   limit?: number;
   offset?: number;
@@ -108,6 +109,7 @@ export async function getPartners(params?: {
   const searchParams = new URLSearchParams();
   if (params?.country) searchParams.set("country", params.country);
   if (params?.stage) searchParams.set("stage", params.stage);
+  if (params?.type) searchParams.set("type", params.type);
   if (params?.sort) searchParams.set("sort", params.sort);
   if (params?.limit) searchParams.set("limit", String(params.limit));
   if (params?.offset) searchParams.set("offset", String(params.offset));

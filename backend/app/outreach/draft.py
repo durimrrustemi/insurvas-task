@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from app.config import CadenceConfig
-from app.prompts.draft_v1 import DRAFT_V1
+from app.prompts.draft_v2 import DRAFT_V2, PARTNER_KINDS, QUALIFYING_QUESTIONS
 from app.services.llm import DraftResponse, complete_json
 
 
@@ -32,6 +32,7 @@ async def generate_drafts(
     evidence_text: str,
     channels: list[str],
     cadence: CadenceConfig,
+    partner_type: str = "bpo",
 ) -> list[DraftedMessage]:
     """Generate message drafts for each channel and sequence."""
     now = datetime.now(timezone.utc)
@@ -56,7 +57,7 @@ async def generate_drafts(
                 day_offset = seq * 3
             send_after = now + timedelta(days=day_offset)
 
-            prompt_name = f"DRAFT_V1_{channel}_{seq}"
+            prompt_name = f"DRAFT_V2_{channel}_{seq}"
             variables = {
                 "channel": channel,
                 "sequence": seq,
@@ -65,6 +66,8 @@ async def generate_drafts(
                 "partner_name": partner_name,
                 "partner_domain": partner_domain,
                 "partner_country": partner_country,
+                "partner_kind": PARTNER_KINDS[partner_type],
+                "qualifying_questions": QUALIFYING_QUESTIONS[partner_type],
                 "angle": angle,
                 "evidence": evidence_text,
                 "max_words": limits.get("max_words", 120),
@@ -74,7 +77,7 @@ async def generate_drafts(
 
             result = await complete_json(
                 prompt_name=prompt_name,
-                prompt=DRAFT_V1,
+                prompt=DRAFT_V2,
                 variables=variables,
                 schema=DraftResponse,
             )

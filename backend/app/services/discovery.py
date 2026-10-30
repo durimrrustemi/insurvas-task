@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import app_config
+from app.discovery.classify import classify_partner_type
 from app.discovery.dedupe import normalise_domain
 from app.discovery.runner import DiscoveryResult, run_discovery
 from app.models.discovery_run import DiscoveryRun
@@ -110,6 +111,9 @@ async def _persist_results(
                     app_config.get_country(result.country).timezone
                     if app_config.get_country(result.country)
                     else None
+                ),
+                type=classify_partner_type(
+                    " ".join([name, c.snippet, enriched.homepage_text[:5000]])
                 ),
                 stage=Stage.FOUND,
                 stage_entered_at=now,

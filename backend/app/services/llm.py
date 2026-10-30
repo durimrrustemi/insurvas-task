@@ -35,14 +35,14 @@ class DraftResponse(BaseModel):
 
 # Mock responses keyed by prompt_name
 _MOCK_RESPONSES: dict[str, dict[str, Any]] = {
-    "ANGLE_V1": {
+    "ANGLE_V2": {
         "angle": (
             "Your 200+ agent team with live transfer experience"
             " and TCPA compliance makes you a strong fit for"
             " our US final-expense campaigns."
         ),
     },
-    "DRAFT_V1_email_0": {
+    "DRAFT_V2_email_0": {
         "subject": "Partnership opportunity — live transfer test batch",
         "body": (
             "Hi there,\n\n"
@@ -62,7 +62,7 @@ _MOCK_RESPONSES: dict[str, dict[str, Any]] = {
             "Best regards"
         ),
     },
-    "DRAFT_V1_email_1": {
+    "DRAFT_V2_email_1": {
         "subject": "Quick follow-up — live transfer partnership",
         "body": (
             "Hi,\n\n"
@@ -74,7 +74,7 @@ _MOCK_RESPONSES: dict[str, dict[str, Any]] = {
             "Worth a quick chat?"
         ),
     },
-    "DRAFT_V1_email_2": {
+    "DRAFT_V2_email_2": {
         "subject": "Still interested?",
         "body": (
             "Hi,\n\n"
@@ -85,7 +85,7 @@ _MOCK_RESPONSES: dict[str, dict[str, Any]] = {
             "Thanks"
         ),
     },
-    "DRAFT_V1_email_3": {
+    "DRAFT_V2_email_3": {
         "subject": "Last note — happy to reconnect anytime",
         "body": (
             "Hi,\n\n"
@@ -97,7 +97,7 @@ _MOCK_RESPONSES: dict[str, dict[str, Any]] = {
             "All the best"
         ),
     },
-    "DRAFT_V1_linkedin_0": {
+    "DRAFT_V2_linkedin_0": {
         "subject": None,
         "body": (
             "Hi — I noticed your team's insurance campaign"
@@ -107,7 +107,7 @@ _MOCK_RESPONSES: dict[str, dict[str, Any]] = {
             " be open to a quick conversation about a test batch?"
         ),
     },
-    "DRAFT_V1_linkedin_1": {
+    "DRAFT_V2_linkedin_1": {
         "subject": None,
         "body": (
             "Hi again — just following up on my earlier message"
@@ -115,20 +115,20 @@ _MOCK_RESPONSES: dict[str, dict[str, Any]] = {
             " more details if you're interested."
         ),
     },
-    "DRAFT_V1_linkedin_2": {
+    "DRAFT_V2_linkedin_2": {
         "subject": None,
         "body": (
             "Quick follow-up — still interested in exploring a partnership? No pressure either way."
         ),
     },
-    "DRAFT_V1_linkedin_3": {
+    "DRAFT_V2_linkedin_3": {
         "subject": None,
         "body": (
             "Last note — feel free to connect anytime if a live"
             " transfer partnership makes sense down the road."
         ),
     },
-    "DRAFT_V1_whatsapp_0": {
+    "DRAFT_V2_whatsapp_0": {
         "subject": None,
         "body": (
             "Hi! I saw your BPO handles insurance campaigns."
@@ -136,20 +136,20 @@ _MOCK_RESPONSES: dict[str, dict[str, Any]] = {
             " — interested in a test batch? Happy to share details."
         ),
     },
-    "DRAFT_V1_whatsapp_1": {
+    "DRAFT_V2_whatsapp_1": {
         "subject": None,
         "body": (
             "Hi — following up on my earlier message about buying"
             " live transfers. Would love to chat if you're open to it."
         ),
     },
-    "DRAFT_V1_whatsapp_2": {
+    "DRAFT_V2_whatsapp_2": {
         "subject": None,
         "body": (
             "Quick check-in — still interested in a live transfer partnership? No worries if not."
         ),
     },
-    "DRAFT_V1_whatsapp_3": {
+    "DRAFT_V2_whatsapp_3": {
         "subject": None,
         "body": (
             "Last note — happy to reconnect whenever a live transfer"
@@ -179,7 +179,7 @@ def _mock_response[M: BaseModel](prompt_name: str, schema: type[M]) -> M:
     data = _MOCK_RESPONSES.get(prompt_name)
     if data is None:
         logger.warning("No mock for prompt %s, using empty", prompt_name)
-        data = _MOCK_RESPONSES.get("ANGLE_V1", {"angle": "mock angle"})
+        data = _MOCK_RESPONSES.get("ANGLE_V2", {"angle": "mock angle"})
     return schema.model_validate(data)
 
 

@@ -1,8 +1,10 @@
 """Prompt for generating a personalised outreach angle from signals."""
 
-ANGLE_V1 = """\
+ANGLE_V2 = """\
 You are writing outreach for INSURVAS, a US final-expense life insurance \
-company looking for BPO call center partners who generate live-transfer leads.
+company that buys live transfers from partners.
+
+The partner is {partner_kind}.
 
 Given the following evidence about a potential partner, pick 1-2 concrete \
 facts and write ONE sentence that explains why INSURVAS should work with them. \
