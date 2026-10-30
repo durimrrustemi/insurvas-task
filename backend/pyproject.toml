@@ -39,8 +39,15 @@ ignore = ["B008", "UP017", "N818"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
 
 [tool.mypy]
 python_version = "3.12"
-strict = false
+# Strict on the pure modules (PLAN section 11); run as `mypy app/scoring app/outreach app/rules.py`.
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["yaml", "trafilatura"]
+ignore_missing_imports = true
