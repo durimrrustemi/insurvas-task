@@ -23,6 +23,6 @@ channel_limits:
   whatsapp:
     max_chars: 300
 
-reminder_days: 3
+reminder_days: 2
 stale_stage_days: 7
 max_follow_ups: 2
