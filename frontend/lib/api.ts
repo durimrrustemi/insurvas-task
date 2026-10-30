@@ -160,6 +160,45 @@ export async function scorePartner(partnerId: string): Promise<Partner> {
   return apiFetch<Partner>(`/partners/${partnerId}/score`, { method: "POST" });
 }
 
+export interface BoardData {
+  columns: Record<string, Partner[]>;
+}
+
+export interface AttentionItem {
+  partner: Partner;
+  reasons: string[];
+  priority: number;
+  days_since_touch: number;
+  days_in_stage: number;
+}
+
+export interface AttentionData {
+  items: AttentionItem[];
+}
+
+export async function getBoard(): Promise<BoardData> {
+  return apiFetch<BoardData>("/board");
+}
+
+export async function getAttention(): Promise<AttentionData> {
+  return apiFetch<AttentionData>("/attention");
+}
+
+export async function getConfig(): Promise<Record<string, unknown>> {
+  return apiFetch<Record<string, unknown>>("/config");
+}
+
+export async function startDiscoveryRun(country: string, limit: number = 30) {
+  return apiFetch("/discovery/runs", {
+    method: "POST",
+    body: JSON.stringify({ country, limit }),
+  });
+}
+
+export async function getDiscoveryRuns() {
+  return apiFetch<Array<Record<string, unknown>>>("/discovery/runs");
+}
+
 export async function createActivity(partnerId: string, data: { kind: string; channel?: string; body?: string }) {
   return apiFetch(`/partners/${partnerId}/activities`, {
     method: "POST",

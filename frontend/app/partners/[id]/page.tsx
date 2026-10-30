@@ -2,6 +2,7 @@ import { getPartner, getSignals, getContacts, getMessages, getActivities } from 
 import { StageBadge } from "@/components/StageBadge";
 import { ScoreBreakdown } from "@/components/ScoreBreakdown";
 import { MessageReview } from "@/components/MessageReview";
+import { StageActions } from "@/components/StageActions";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 
@@ -50,6 +51,9 @@ export default async function PartnerDetailPage({
           Blocker: {partner.blocker.replace(/_/g, " ")}
         </div>
       )}
+
+      {/* Stage actions + readiness checklist */}
+      <StageActions partner={partner} signals={signals} contacts={contacts} />
 
       {/* Score breakdown with expandable evidence */}
       <ScoreBreakdown partner={partner} signals={signals} />

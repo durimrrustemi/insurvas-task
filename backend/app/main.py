@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1 import (
     activities,
+    board,
     config_routes,
     contacts,
     discovery,
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
     application.include_router(messages.router, prefix=api_prefix)
     application.include_router(activities.router, prefix=api_prefix)
     application.include_router(discovery.router, prefix=api_prefix)
+    application.include_router(board.router, prefix=api_prefix)
 
     @application.exception_handler(NotFound)
     async def not_found_handler(request: Request, exc: NotFound):

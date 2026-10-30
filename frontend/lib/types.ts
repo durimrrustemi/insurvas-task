@@ -5,4 +5,7 @@ export type {
   Contact,
   Message,
   Activity,
+  BoardData,
+  AttentionItem,
+  AttentionData,
 } from "./api";
