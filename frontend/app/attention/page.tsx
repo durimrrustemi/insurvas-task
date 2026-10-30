@@ -23,7 +23,9 @@ export default async function AttentionPage() {
       </div>
 
       {data.items.length === 0 ? (
-        <p className="text-center py-12 text-gray-500">All clear — no partners need attention right now.</p>
+        <p className="text-center py-12 text-gray-500">
+          All clear — no partners need attention right now.
+        </p>
       ) : (
         <div className="space-y-3">
           {data.items.map((item) => (
@@ -39,7 +41,9 @@ export default async function AttentionPage() {
                   <span className="text-sm text-gray-400 ml-2">{item.partner.domain}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{formatScore(item.partner.score_total)}</span>
+                  <span className="text-sm font-medium">
+                    {formatScore(item.partner.score_total)}
+                  </span>
                   <StageBadge stage={item.partner.stage} />
                 </div>
               </div>

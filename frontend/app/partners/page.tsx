@@ -82,7 +82,9 @@ export default async function PartnersPage({
       </div>
 
       {data.items.length === 0 && (
-        <p className="text-center py-12 text-gray-500">No partners found. Run seed or discovery first.</p>
+        <p className="text-center py-12 text-gray-500">
+          No partners found. Run seed or discovery first.
+        </p>
       )}
     </div>
   );

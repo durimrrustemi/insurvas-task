@@ -14,7 +14,10 @@ export default async function ConfigPage() {
 
   const countries = config.countries as Array<Record<string, unknown>>;
   const weights = config.criterion_weights as Record<string, number>;
-  const signals = config.signals as Record<string, Record<string, { weight: number; description: string }>>;
+  const signals = config.signals as Record<
+    string,
+    Record<string, { weight: number; description: string }>
+  >;
   const gates = config.gates as Record<string, { description: string; required_before: string }>;
   const cadence = config.cadence as Record<string, unknown> | null;
 
@@ -22,7 +25,8 @@ export default async function ConfigPage() {
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold mb-2">Configuration</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Read-only view. Change values in <code className="bg-gray-100 px-1 rounded">config/*.yaml</code> and restart.
+        Read-only view. Change values in{" "}
+        <code className="bg-gray-100 px-1 rounded">config/*.yaml</code> and restart.
       </p>
 
       {/* Criterion weights */}

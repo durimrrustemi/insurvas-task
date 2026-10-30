@@ -4,11 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { startDiscoveryRun } from "@/lib/api";
 
-export function DiscoverForm({
-  countries,
-}: {
-  countries: Array<{ code: string; name: string }>;
-}) {
+export function DiscoverForm({ countries }: { countries: Array<{ code: string; name: string }> }) {
   const router = useRouter();
   const [country, setCountry] = useState(countries[0]?.code || "");
   const [limit, setLimit] = useState(15);

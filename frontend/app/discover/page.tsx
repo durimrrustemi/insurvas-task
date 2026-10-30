@@ -7,10 +7,7 @@ export default async function DiscoverPage() {
   let countries: Array<{ code: string; name: string }> = [];
 
   try {
-    const [runsData, configData] = await Promise.all([
-      getDiscoveryRuns(),
-      getConfig(),
-    ]);
+    const [runsData, configData] = await Promise.all([getDiscoveryRuns(), getConfig()]);
     runs = runsData;
     countries = (configData.countries as Array<{ code: string; name: string }>) || [];
   } catch {
@@ -40,7 +37,7 @@ export default async function DiscoverPage() {
               </div>
               <div className="text-xs text-gray-500 mt-1">
                 Found: {run.found as number} · New: {run.new as number}
-                {run.queries && ` · ${(run.queries as string[]).length} queries`}
+                {Array.isArray(run.queries) && ` · ${run.queries.length} queries`}
               </div>
             </div>
           ))}

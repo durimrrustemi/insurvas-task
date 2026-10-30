@@ -12,10 +12,7 @@ export function ScoreBar({ score, label }: { score: number | null; label: string
     <div className="flex items-center gap-2 text-sm">
       <span className="w-24 text-gray-500">{label}</span>
       <div className="h-2 w-32 rounded-full bg-gray-200">
-        <div
-          className="h-2 rounded-full bg-blue-500"
-          style={{ width: `${pct}%` }}
-        />
+        <div className="h-2 rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
       </div>
       <span className="text-gray-700">{pct}%</span>
     </div>

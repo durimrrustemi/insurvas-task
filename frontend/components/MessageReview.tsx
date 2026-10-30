@@ -12,13 +12,7 @@ const STATUS_STYLES: Record<string, string> = {
   sent: "bg-blue-100 text-blue-700",
 };
 
-export function MessageReview({
-  partnerId,
-  messages,
-}: {
-  partnerId: string;
-  messages: Message[];
-}) {
+export function MessageReview({ partnerId, messages }: { partnerId: string; messages: Message[] }) {
   const router = useRouter();
   const [generating, setGenerating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -91,9 +85,7 @@ export function MessageReview({
       ) : (
         Object.entries(grouped).map(([channel, msgs]) => (
           <div key={channel} className="mb-4">
-            <h3 className="text-sm font-medium text-gray-600 uppercase mb-2">
-              {channel}
-            </h3>
+            <h3 className="text-sm font-medium text-gray-600 uppercase mb-2">{channel}</h3>
             <div className="space-y-2">
               {msgs
                 .sort((a, b) => a.sequence - b.sequence)
@@ -111,9 +103,7 @@ export function MessageReview({
                     </div>
 
                     {m.angle && (
-                      <p className="text-xs text-gray-500 italic mb-1">
-                        Angle: {m.angle}
-                      </p>
+                      <p className="text-xs text-gray-500 italic mb-1">Angle: {m.angle}</p>
                     )}
 
                     {editingId === m.id ? (
@@ -149,29 +139,21 @@ export function MessageReview({
                     ) : (
                       <>
                         {m.subject && (
-                          <p className="font-medium text-xs mb-1">
-                            Subject: {m.subject}
-                          </p>
+                          <p className="font-medium text-xs mb-1">Subject: {m.subject}</p>
                         )}
-                        <p className="text-gray-700 whitespace-pre-wrap">
-                          {m.body}
-                        </p>
+                        <p className="text-gray-700 whitespace-pre-wrap">{m.body}</p>
 
                         <div className="flex gap-2 mt-2">
                           {m.status === "draft" && (
                             <>
                               <button
-                                onClick={() =>
-                                  handleStatusChange(m.id, "approved")
-                                }
+                                onClick={() => handleStatusChange(m.id, "approved")}
                                 className="rounded bg-green-500 px-2 py-0.5 text-xs text-white hover:bg-green-600"
                               >
                                 Approve
                               </button>
                               <button
-                                onClick={() =>
-                                  handleStatusChange(m.id, "rejected")
-                                }
+                                onClick={() => handleStatusChange(m.id, "rejected")}
                                 className="rounded bg-red-500 px-2 py-0.5 text-xs text-white hover:bg-red-600"
                               >
                                 Reject
@@ -194,9 +176,7 @@ export function MessageReview({
                           </button>
                           {m.status !== "draft" && m.status !== "sent" && (
                             <button
-                              onClick={() =>
-                                handleStatusChange(m.id, "draft")
-                              }
+                              onClick={() => handleStatusChange(m.id, "draft")}
                               className="rounded border px-2 py-0.5 text-xs hover:bg-gray-50"
                             >
                               Reset to draft
