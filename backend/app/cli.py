@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 import typer
 
@@ -30,9 +31,24 @@ def seed():
 def discover(
     country: str = typer.Option(..., help="Country code (e.g., PH)"),
     limit: int = typer.Option(30, help="Max results"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
 ):
     """Run discovery for a country."""
-    typer.echo(f"Discovery for {country} (limit {limit}) — not yet implemented")
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(levelname)-8s %(name)s: %(message)s",
+    )
+
+    async def _discover():
+        from app.db import async_session
+        from app.services.discovery import start_discovery
+
+        async with async_session() as session:
+            run = await start_discovery(session, country, limit)
+            await session.commit()
+            typer.echo(f"Discovery complete: country={run.country} found={run.found} new={run.new}")
+
+    asyncio.run(_discover())
 
 
 if __name__ == "__main__":

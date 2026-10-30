@@ -64,7 +64,7 @@ def _config_dir() -> Path:
     # In Docker: /app/config (mounted). Locally: ../config relative to backend/
     candidates = [Path("config"), Path(__file__).resolve().parent.parent.parent / "config"]
     for p in candidates:
-        if p.is_dir():
+        if (p / "countries.yaml").is_file():
             return p
     return Path("config")
 

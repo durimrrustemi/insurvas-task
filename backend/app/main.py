@@ -2,7 +2,16 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.v1 import activities, config_routes, contacts, health, messages, partners, signals
+from app.api.v1 import (
+    activities,
+    config_routes,
+    contacts,
+    discovery,
+    health,
+    messages,
+    partners,
+    signals,
+)
 from app.errors import Conflict, DomainError, GateBlocked, InvalidTransition, NotFound
 
 
@@ -25,6 +34,7 @@ def create_app() -> FastAPI:
     application.include_router(contacts.router, prefix=api_prefix)
     application.include_router(messages.router, prefix=api_prefix)
     application.include_router(activities.router, prefix=api_prefix)
+    application.include_router(discovery.router, prefix=api_prefix)
 
     @application.exception_handler(NotFound)
     async def not_found_handler(request: Request, exc: NotFound):

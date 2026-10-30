@@ -24,6 +24,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - /app/.venv
       - ./config:/app/config
       - ./.cache:/app/.cache
     env_file: .env
