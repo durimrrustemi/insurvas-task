@@ -90,3 +90,10 @@ countries:
     timezone: America/New_York
     preferred_channels: [email, linkedin]
     cities: [Miami, Dallas, Phoenix, Las Vegas, Tampa]
+
+  - code: MU
+    name: Mauritius
+    english_baseline: 0.70
+    timezone: Indian/Mauritius
+    preferred_channels: [email, whatsapp]
+    cities: [Port Louis, Ebene]
