@@ -10,7 +10,9 @@ from app.models.activity import Activity, ActivityKind
 from app.models.contact import Contact
 from app.models.partner import Blocker, Partner, PartnerType, Stage
 from app.models.signal import Signal
+from app.rules import REQUIRED_TERMS
 from app.scoring import SignalResult
+from app.scoring.gates import GATE_CRITERION
 from app.scoring.score import compute_scores
 
 COUNTRIES = ["PH", "IN", "ZA", "JM", "GH", "KE"]
@@ -31,6 +33,10 @@ TIMEZONES = {
     "KE": "Africa/Nairobi",
 }
 STAGES = list(Stage)
+# Stages behind the gates (rules.py): seeded partners there have passed them.
+GATED_STAGES = {Stage.TEST_CALLS, Stage.SIGNED}
+OPEN_BLOCKERS = [(Stage.IN_TALKS, Blocker.PRICING), (Stage.CONTACTED, Blocker.NO_RESPONSE)]
+LOST_REASONS = ["no response", "pricing", "no US hours", "capacity"]
 BPO_NAMES = [
     "Example BPO",
     "Demo Outsourcing",
@@ -63,12 +69,6 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
         now - timedelta(days=days_ago)
         stage_entered = now - timedelta(days=rng.randint(0, days_ago))
 
-        blocker = None
-        if i == 5:
-            blocker = Blocker.PRICING
-        elif i == 12:
-            blocker = Blocker.NO_RESPONSE
-
         partner = Partner(
             name=name,
             domain=domain,
@@ -79,10 +79,15 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
             type=PartnerType.BPO,
             stage=stage,
             stage_entered_at=stage_entered,
-            blocker=blocker,
+            engagement_terms=_synthetic_terms(rng, stage),
         )
         session.add(partner)
         partners.append(partner)
+
+    # Blockers only make sense on open deals: one stuck on pricing in talks,
+    # one gone quiet after first contact.
+    for stage, blocker in OPEN_BLOCKERS:
+        next(p for p in partners if p.stage == stage).blocker = blocker
 
     await session.flush()
 
@@ -102,6 +107,20 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
     # and a weight change + `make recompute` re-ranks the seed like real data.
     for p in partners:
         results = _synthetic_signals(rng, p)
+        if p.stage in GATED_STAGES:
+            # Partners in test calls or later passed the gates, so seed the
+            # confirmations a human would have recorded on the call.
+            results += [
+                SignalResult(
+                    criterion=GATE_CRITERION,
+                    key=gate,
+                    value=1.0,
+                    weight=0.0,
+                    source_url="",
+                    matched_text="manual: confirmed",
+                )
+                for gate in app_config.gates
+            ]
         for r in results:
             session.add(
                 Signal(
@@ -120,15 +139,28 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
             c = scores.criteria.get(criterion)
             setattr(p, f"score_{criterion}", c.score if c and c.coverage > 0 else None)
 
-    # Add activities
+    # Timeline dated at stage entry, so /attention sees realistic gaps since the
+    # last touch instead of every seed partner looking touched today.
     for p in partners:
-        activity = Activity(
-            partner_id=p.id,
-            kind=ActivityKind.STAGE_CHANGE,
-            body=f"Created in stage {p.stage.value} (seed)",
-            at=p.created_at,
+        lost_reason = f": {rng.choice(LOST_REASONS)}" if p.stage == Stage.LOST else ""
+        session.add(
+            Activity(
+                partner_id=p.id,
+                kind=ActivityKind.STAGE_CHANGE,
+                body=f"Created in stage {p.stage.value} (seed){lost_reason}",
+                at=p.stage_entered_at,
+            )
         )
-        session.add(activity)
+        if p.stage in GATED_STAGES:
+            for gate in app_config.gates:
+                session.add(
+                    Activity(
+                        partner_id=p.id,
+                        kind=ActivityKind.NOTE,
+                        body=f"gate {gate}: confirmed (seed)",
+                        at=p.stage_entered_at,
+                    )
+                )
 
     await session.commit()
     return partners
@@ -147,7 +179,11 @@ def _synthetic_signals(rng: random.Random, p: Partner) -> list[SignalResult]:
         )
     ]
     criteria = ["english", "insurance", "size", "compliance"]
-    for criterion in rng.sample(criteria, k=rng.randint(1, 4)):
+    chosen = rng.sample(criteria, k=rng.randint(1, 4))
+    # Past the compliance gate there is compliance evidence to show for it.
+    if p.stage in GATED_STAGES and "compliance" not in chosen:
+        chosen.append("compliance")
+    for criterion in chosen:
         defs = {k: v for k, v in app_config.signals[criterion].items() if k != "english_baseline"}
         for key in rng.sample(sorted(defs), k=min(len(defs), rng.randint(1, 2))):
             results.append(
@@ -161,3 +197,19 @@ def _synthetic_signals(rng: random.Random, p: Partner) -> list[SignalResult]:
                 )
             )
     return results
+
+
+def _synthetic_terms(rng: random.Random, stage: Stage) -> dict[str, object] | None:
+    """Terms a partner at this stage must already have agreed (see rules.REQUIRED_TERMS)."""
+    if stage not in GATED_STAGES:
+        return None
+    terms: dict[str, object] = {"test_batch_size": rng.choice([25, 50, 100])}
+    if stage == Stage.SIGNED:
+        terms |= {
+            "price_per_transfer": rng.choice([12, 15, 18, 22]),
+            "daily_volume": rng.choice([20, 40, 60]),
+            "hours": "9:00-17:00 EST",
+            "quality_threshold": "60% contact rate, <5% complaints",
+        }
+    assert all(k in terms for k in REQUIRED_TERMS.get(stage.value, []))
+    return terms
