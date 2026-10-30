@@ -1,6 +1,6 @@
 # INSURVAS Partner Pipeline
 
-Finds call centers (BPOs) worldwide from public web data, ranks them on insurance experience, English quality, size and compliance with the evidence shown, drafts personalised outreach per channel for human review, and tracks each center from `found` to `signed` or `lost`. Nothing is sent automatically.
+Finds call centers (BPOs) and insurance lead vendors worldwide from public web data, ranks them on insurance experience, English quality, size and compliance with the evidence shown, drafts personalised outreach per channel for human review, and tracks each center from `found` to `signed` or `lost`. Nothing is sent automatically.
 
 ## Run it
 
@@ -39,7 +39,7 @@ Everything runs inside the containers, so no local Python or Node is needed. CI 
 
 ## How it works
 
-**Finder** (`backend/app/discovery/`): query templates × country cities → Serper/Places → dedupe on normalised domain → fetch homepage + up to 3 inner pages (robots-aware, cached 30 days in `.cache/pages/`). Bad sites (DNS, TLS, timeouts, odd charsets) are recorded and skipped, never fatal.
+**Finder** (`backend/app/discovery/`): BPO and lead-vendor query templates × country cities → Serper/Places → drop directories and listicles (`config/queries.yaml`) → dedupe on normalised domain → fetch homepage + up to 3 inner pages (robots-aware, cached 30 days in `.cache/pages/`). Bad sites (DNS, TLS, timeouts, odd charsets) are recorded and skipped, never fatal. Each result is typed as BPO or lead vendor from its own site language (`discovery/classify.py`) and scored right away.
 
 **Scorer** (`backend/app/scoring/`): pure functions turn page text into signal rows, each with `source_url` and `matched_text`.
 

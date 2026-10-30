@@ -2,6 +2,8 @@
 
 Deferred from the 7-day plan. Each is a known gap, not a hidden one.
 
+- Sending approved messages from the user's own accounts: prefilled `mailto:` and `wa.me` links plus "mark as sent" first, Gmail API later. LinkedIn stays copy-and-send (no messaging API for cold contact).
+- Google Places source uses the legacy Places API, which new Google Cloud projects can't enable; migrate to Places API (New) `places:searchText`.
 - LLM grading of site English (`llm_english_grade` is configured in `scoring.yaml` but never produced; prompt `ENGLISH_GRADE_V1` not written).
 - `/funnel`: % lost per reason per stage. Needs the lost reason stored as a field rather than in the stage-change activity text.
 - Overclaim flag: stated seats/years in replies vs. what the site shows.
