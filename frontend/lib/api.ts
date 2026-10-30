@@ -129,6 +129,22 @@ export async function getContacts(partnerId: string): Promise<Contact[]> {
   return apiFetch<Contact[]>(`/partners/${partnerId}/contacts`);
 }
 
+export async function createContact(
+  partnerId: string,
+  data: {
+    name: string;
+    role?: string;
+    email?: string;
+    whatsapp?: string;
+    linkedin_url?: string;
+  },
+): Promise<Contact> {
+  return apiFetch<Contact>(`/partners/${partnerId}/contacts`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export async function getMessages(partnerId: string): Promise<Message[]> {
   return apiFetch<Message[]>(`/partners/${partnerId}/messages`);
 }

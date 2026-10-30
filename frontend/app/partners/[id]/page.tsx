@@ -10,6 +10,7 @@ import { StageBadge } from "@/components/StageBadge";
 import { ScoreBreakdown } from "@/components/ScoreBreakdown";
 import { MessageReview } from "@/components/MessageReview";
 import { StageActions } from "@/components/StageActions";
+import { AddContact } from "@/components/AddContact";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 
@@ -91,6 +92,7 @@ export default async function PartnerDetailPage({ params }: { params: Promise<{ 
             ))}
           </div>
         )}
+        <AddContact partnerId={id} />
       </section>
 
       {/* Messages with review controls */}
