@@ -1,40 +1,45 @@
-.PHONY: setup dev test lint fmt migrate seed discover score demo
+.PHONY: setup dev test lint fmt migrate seed discover score demo down
 
+API = docker compose run --rm api uv run
+WEB = docker compose run --rm --no-deps web
+
+# Migrations and seeding also run on every `docker compose up` (see docker-compose.yml),
+# so `setup` only prepares .env and images.
 setup:
 	cp -n .env.example .env || true
 	docker compose build
-	docker compose up -d db
-	sleep 2
-	docker compose run --rm api uv run alembic upgrade head
-	docker compose down
 
 dev:
 	docker compose up
 
+down:
+	docker compose down
+
 test:
-	docker compose run --rm api uv run pytest -x -q
-	cd frontend && pnpm lint
+	$(API) pytest -q
+	$(WEB) pnpm lint
 
 lint:
-	docker compose run --rm api uv run ruff check .
-	docker compose run --rm api uv run ruff format --check .
-	cd frontend && pnpm lint
+	$(API) ruff check .
+	$(API) ruff format --check .
+	$(API) mypy app/scoring app/outreach app/rules.py
+	$(WEB) sh -c "pnpm lint && pnpm exec tsc --noEmit && pnpm exec prettier --check ."
 
 fmt:
-	docker compose run --rm api uv run ruff check --fix .
-	docker compose run --rm api uv run ruff format .
-	cd frontend && pnpm format
+	$(API) ruff check --fix .
+	$(API) ruff format .
+	$(WEB) pnpm format
 
 migrate:
-	docker compose run --rm api uv run alembic upgrade head
+	$(API) alembic upgrade head
 
 seed:
-	docker compose run --rm api uv run python -m app.cli seed
+	$(API) python -m app.cli seed
 
 discover:
-	docker compose run --rm api uv run python -m app.cli discover --country $(COUNTRY) --limit $(LIMIT)
+	$(API) python -m app.cli discover --country $(COUNTRY) --limit $(LIMIT)
 
 score:
-	docker compose run --rm api uv run python -m app.cli score $(if $(COUNTRY),--country $(COUNTRY),) $(if $(PARTNER),--partner $(PARTNER),)
+	$(API) python -m app.cli score $(if $(COUNTRY),--country $(COUNTRY),) $(if $(PARTNER),--partner $(PARTNER),)
 
-demo: migrate seed dev
+demo: setup dev
