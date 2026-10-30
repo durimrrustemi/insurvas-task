@@ -43,20 +43,22 @@ BPO_NAMES = [
 
 
 async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]:
+    # Fixed seed so every fresh setup shows the same demo pipeline.
+    rng = random.Random(42)
     now = datetime.now(timezone.utc)
     partners = []
 
     for i in range(count):
         country = COUNTRIES[i % len(COUNTRIES)]
-        city = random.choice(CITIES[country])
+        city = rng.choice(CITIES[country])
         name_base = BPO_NAMES[i % len(BPO_NAMES)]
         name = f"{name_base} {city} {i + 1}"
         domain = f"example-bpo-{i + 1}.test"
 
         stage = STAGES[i % len(STAGES)]
-        days_ago = random.randint(1, 20)
+        days_ago = rng.randint(1, 20)
         now - timedelta(days=days_ago)
-        stage_entered = now - timedelta(days=random.randint(0, days_ago))
+        stage_entered = now - timedelta(days=rng.randint(0, days_ago))
 
         blocker = None
         if i == 5:
@@ -64,11 +66,11 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
         elif i == 12:
             blocker = Blocker.NO_RESPONSE
 
-        score_total = round(random.uniform(0.2, 0.95), 2) if stage != Stage.FOUND else None
-        score_english = round(random.uniform(0.3, 1.0), 2) if score_total else None
-        score_insurance = round(random.uniform(0.1, 0.9), 2) if score_total else None
-        score_size = round(random.uniform(0.2, 0.8), 2) if score_total else None
-        score_compliance = round(random.uniform(0.0, 0.7), 2) if score_total else None
+        score_total = round(rng.uniform(0.2, 0.95), 2) if stage != Stage.FOUND else None
+        score_english = round(rng.uniform(0.3, 1.0), 2) if score_total else None
+        score_insurance = round(rng.uniform(0.1, 0.9), 2) if score_total else None
+        score_size = round(rng.uniform(0.2, 0.8), 2) if score_total else None
+        score_compliance = round(rng.uniform(0.0, 0.7), 2) if score_total else None
 
         partner = Partner(
             name=name,
@@ -107,13 +109,13 @@ async def seed_partners(session: AsyncSession, count: int = 30) -> list[Partner]
     criteria = ["english", "insurance", "size", "compliance"]
     for p in partners:
         if p.score_total is not None:
-            for criterion in random.sample(criteria, k=random.randint(1, 4)):
+            for criterion in rng.sample(criteria, k=rng.randint(1, 4)):
                 signal = Signal(
                     partner_id=p.id,
                     criterion=criterion,
                     key=f"seed_{criterion}_signal",
-                    value=round(random.uniform(0.2, 1.0), 2),
-                    weight=round(random.uniform(0.5, 3.0), 2),
+                    value=round(rng.uniform(0.2, 1.0), 2),
+                    weight=round(rng.uniform(0.5, 3.0), 2),
                     source_url=f"https://{p.domain}/about",
                     matched_text=f"Seed {criterion} evidence for {p.name}",
                 )

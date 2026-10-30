@@ -9,18 +9,27 @@ app = typer.Typer()
 
 
 @app.command()
-def seed():
+def seed(
+    if_empty: bool = typer.Option(False, "--if-empty", help="Skip if partners already exist"),
+):
     """Seed the database with 30 synthetic partners."""
 
     async def _seed():
-        from app.db import async_session, engine
-        from app.models import Base
+        from sqlalchemy import func, select
+
+        from app.db import async_session
+        from app.models.partner import Partner
         from app.seed import seed_partners
 
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
         async with async_session() as session:
+            count_q = select(func.count()).select_from(Partner)
+            existing = (await session.execute(count_q)).scalar_one()
+            if existing:
+                if if_empty:
+                    typer.echo(f"Skipping seed: {existing} partners already present.")
+                    return
+                typer.echo(f"Refusing to seed: {existing} partners already present.", err=True)
+                raise typer.Exit(1)
             partners = await seed_partners(session)
             typer.echo(f"Seeded {len(partners)} partners.")
 
