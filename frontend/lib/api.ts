@@ -164,6 +164,8 @@ export async function scorePartner(partnerId: string): Promise<Partner> {
 }
 
 export interface BoardData {
+  stages: string[];
+  transitions: Record<string, string[]>;
   columns: Record<string, Partner[]>;
 }
 

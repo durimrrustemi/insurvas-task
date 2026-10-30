@@ -10,6 +10,11 @@ export function formatScore(score: number | null): string {
   return `${Math.round(score * 100)}%`;
 }
 
+// "in_talks" -> "In Talks". Generic, so a new stage needs no frontend change.
+export function stageLabel(stage: string): string {
+  return stage.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function stageColor(stage: string): string {
   const colors: Record<string, string> = {
     found: "bg-gray-100 text-gray-700",

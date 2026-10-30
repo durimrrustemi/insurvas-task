@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import rules
 from app.config import app_config
 from app.db import get_session
 from app.models.activity import Activity
@@ -16,35 +17,29 @@ from app.schemas.partner import PartnerRead
 
 router = APIRouter(tags=["board"])
 
-STAGES_ORDER = [
-    Stage.FOUND,
-    Stage.CONTACTED,
-    Stage.REPLIED,
-    Stage.IN_TALKS,
-    Stage.TEST_CALLS,
-    Stage.SIGNED,
-    Stage.LOST,
-]
+# Board columns: the funnel in order, then lost. rules.py is the single source.
+BOARD_STAGES = [*rules.STAGE_ORDER, Stage.LOST.value]
 
 
 @router.get("/board")
 async def get_board(
     session: AsyncSession = Depends(get_session),
 ):
-    """Partners grouped by stage for kanban view."""
+    """Partners grouped by stage for kanban view, plus the allowed moves per stage."""
     result = await session.execute(
         select(Partner).order_by(Partner.score_total.desc().nulls_last())
     )
     partners = list(result.scalars().all())
 
-    columns: dict[str, list[dict]] = {}
-    for stage in STAGES_ORDER:
-        columns[stage.value] = []
-
+    columns: dict[str, list[dict]] = {stage: [] for stage in BOARD_STAGES}
     for p in partners:
         columns[p.stage.value].append(PartnerRead.model_validate(p).model_dump(mode="json"))
 
-    return {"columns": columns}
+    return {
+        "stages": BOARD_STAGES,
+        "transitions": {s: rules.ALLOWED_TRANSITIONS.get(s, []) for s in BOARD_STAGES},
+        "columns": columns,
+    }
 
 
 @router.get("/attention")

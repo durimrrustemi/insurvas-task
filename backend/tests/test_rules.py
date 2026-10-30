@@ -64,6 +64,13 @@ class TestTransitions:
     def test_allowed(self, frm: str, to: str, allowed: bool) -> None:
         assert rules.is_allowed(frm, to) is allowed
 
+    def test_rules_cover_every_stage_enum_value(self) -> None:
+        # Guards the "add a stage" change: the enum and rules.py must move together.
+        from app.models.partner import Stage
+
+        assert set(rules.STAGE_ORDER) | {"lost"} == {s.value for s in Stage}
+        assert set(rules.ALLOWED_TRANSITIONS) == {s.value for s in Stage}
+
     def test_every_stage_can_be_lost_except_lost(self) -> None:
         for stage in rules.STAGE_ORDER:
             assert rules.is_allowed(stage, "lost")

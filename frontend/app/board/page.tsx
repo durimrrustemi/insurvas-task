@@ -1,8 +1,6 @@
 import { getBoard } from "@/lib/api";
 import { KanbanBoard } from "@/components/KanbanBoard";
 
-const STAGES = ["found", "contacted", "replied", "in_talks", "test_calls", "signed", "lost"];
-
 export default async function BoardPage() {
   let board;
   try {
@@ -18,7 +16,7 @@ export default async function BoardPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-4">Pipeline Board</h1>
-      <KanbanBoard columns={board.columns} stages={STAGES} />
+      <KanbanBoard columns={board.columns} stages={board.stages} transitions={board.transitions} />
     </div>
   );
 }

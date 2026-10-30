@@ -4,16 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Partner, PartnerReadiness } from "@/lib/types";
 import { transitionStage, createActivity, setGate, updatePartner } from "@/lib/api";
-
-const STAGE_LABELS: Record<string, string> = {
-  found: "Found",
-  contacted: "Contacted",
-  replied: "Replied",
-  in_talks: "In Talks",
-  test_calls: "Test Calls",
-  signed: "Signed",
-  lost: "Lost",
-};
+import { stageLabel } from "@/lib/utils";
 
 const BLOCKERS = [
   "no_response",
@@ -33,7 +24,8 @@ const TERM_FIELDS: Array<{ key: string; label: string }> = [
   { key: "quality_threshold", label: "Quality threshold" },
 ];
 
-const TERMS_STAGES = ["in_talks", "test_calls", "signed"];
+// Terms are negotiated once talks start; any later stage (including new ones) shows them.
+const PRE_TALKS_STAGES = ["found", "contacted", "replied", "lost"];
 
 export function StageActions({
   partner,
@@ -97,7 +89,7 @@ export function StageActions({
         t.checks.length === 0 ? null : (
           <div key={t.to} className="mb-3 rounded border p-3">
             <p className="text-xs font-medium text-gray-600 mb-2">
-              Readiness for {STAGE_LABELS[t.to] || t.to}:
+              Readiness for {stageLabel(t.to)}:
             </p>
             {t.checks.map((c) => (
               <div key={c.key} className="flex items-center gap-2 text-xs">
@@ -119,7 +111,7 @@ export function StageActions({
             title={t.ready ? undefined : "Readiness checks not met"}
             className="rounded px-3 py-1 text-sm bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
           >
-            {`Move to ${STAGE_LABELS[t.to] || t.to}`}
+            {`Move to ${stageLabel(t.to)}`}
           </button>
         ))}
         {canLose && (
@@ -184,7 +176,7 @@ export function StageActions({
       </div>
 
       {/* Engagement terms */}
-      {TERMS_STAGES.includes(partner.stage) && (
+      {!PRE_TALKS_STAGES.includes(partner.stage) && (
         <div className="mt-4 rounded border p-3">
           <p className="text-xs font-medium text-gray-600 mb-2">Engagement terms</p>
           <div className="grid grid-cols-2 gap-2">

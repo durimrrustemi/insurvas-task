@@ -153,9 +153,11 @@ class TestStageFlow:
 class TestBoardAndAttention:
     async def test_board_has_every_stage(self, client: AsyncClient):
         await create_partner(client)
-        cols = (await client.get("/api/v1/board")).json()["columns"]
-        assert list(cols) == [s.value for s in Stage]
-        assert len(cols["found"]) == 1
+        board = (await client.get("/api/v1/board")).json()
+        assert board["stages"] == [s.value for s in Stage]
+        assert list(board["columns"]) == board["stages"]
+        assert board["transitions"]["found"] == ["contacted", "lost"]
+        assert len(board["columns"]["found"]) == 1
 
     async def test_attention_flags_untouched_and_blocked(self, client: AsyncClient, session):
         now = datetime.now(timezone.utc)
