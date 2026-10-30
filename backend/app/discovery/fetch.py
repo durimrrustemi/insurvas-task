@@ -68,7 +68,7 @@ async def _check_robots(client: httpx.AsyncClient, base_url: str) -> bool:
             elif in_wildcard and line == "disallow: /":
                 return False
         return True
-    except httpx.HTTPError:
+    except (httpx.HTTPError, httpx.InvalidURL, ValueError):
         return True
 
 
@@ -123,7 +123,11 @@ async def fetch_page(
                     _write_cache(cache_path, result)
                     return result
 
-                html = resp.text[:MAX_CONTENT_LENGTH]
+                # Decode only the first MAX_CONTENT_LENGTH bytes; huge or
+                # mis-declared pages must not blow up memory or decoding.
+                html = resp.content[:MAX_CONTENT_LENGTH].decode(
+                    resp.encoding or "utf-8", errors="replace"
+                )
                 result = {
                     "url": url,
                     "status": resp.status_code,
@@ -134,7 +138,9 @@ async def fetch_page(
                 _write_cache(cache_path, result)
                 return result
 
-        except httpx.HTTPError as e:
+        except (httpx.HTTPError, httpx.InvalidURL, ValueError, LookupError) as e:
+            # Bad sites are normal in cold discovery: DNS failures, TLS errors,
+            # malformed URLs, unknown charsets. Record and move on.
             logger.warning("Fetch failed %s: %s", url, e)
             return {
                 "url": url,

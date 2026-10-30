@@ -76,7 +76,12 @@ async def run_discovery(
     all_candidates: list[Candidate] = []
     for source in sources:
         for query in queries:
-            results = await source.search(query, country_code)
+            try:
+                results = await source.search(query, country_code)
+            except Exception:
+                # One broken source/query must not kill the whole run.
+                logger.exception("Source %s failed on query %r", type(source).__name__, query)
+                continue
             all_candidates.extend(results)
             if len(all_candidates) >= limit * 3:
                 break
@@ -108,18 +113,23 @@ async def run_discovery(
         page_data = page_map.get(candidate.url, {})
         html = page_data.get("html", "")
 
-        homepage_text = extract_text(html)
-        title = extract_title(html)
+        try:
+            homepage_text = extract_text(html)
+            title = extract_title(html)
 
-        # Find and fetch inner pages
-        inner_urls = find_inner_urls(html, candidate.url, max_pages=3)
-        inner_texts: dict[str, str] = {}
+            # Find and fetch inner pages
+            inner_urls = find_inner_urls(html, candidate.url, max_pages=3)
+            inner_texts: dict[str, str] = {}
 
-        if inner_urls:
-            inner_pages = await fetch_pages(inner_urls)
-            for ip in inner_pages:
-                if ip.get("html"):
-                    inner_texts[ip["url"]] = extract_text(ip["html"])
+            if inner_urls:
+                inner_pages = await fetch_pages(inner_urls)
+                for ip in inner_pages:
+                    if ip.get("html"):
+                        inner_texts[ip["url"]] = extract_text(ip["html"])
+        except Exception:
+            # Keep the candidate with what we have; scoring shows the gaps.
+            logger.exception("Enrichment failed for %s", candidate.url)
+            homepage_text, title, inner_urls, inner_texts = "", "", [], {}
 
         enriched.append(
             EnrichedCandidate(
