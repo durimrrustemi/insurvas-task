@@ -13,14 +13,23 @@ from app.scoring import SignalResult
 from app.scoring.gates import GateStatus, evaluate_gates, gates_required_for
 
 # Forward order of the funnel. `lost` sits outside it: reachable from anywhere, never gated.
-STAGE_ORDER = ["found", "contacted", "replied", "in_talks", "test_calls", "signed"]
+STAGE_ORDER = [
+    "found",
+    "contacted",
+    "replied",
+    "in_talks",
+    "test_calls",
+    "contract_review",
+    "signed",
+]
 
 ALLOWED_TRANSITIONS: dict[str, list[str]] = {
     "found": ["contacted", "lost"],
     "contacted": ["replied", "lost"],
     "replied": ["in_talks", "lost"],
     "in_talks": ["test_calls", "lost"],
-    "test_calls": ["signed", "lost"],
+    "test_calls": ["contract_review", "lost"],
+    "contract_review": ["signed", "lost"],
     "signed": ["lost"],
     "lost": ["found"],
 }
@@ -40,7 +49,7 @@ TERM_LABELS = {
 }
 
 # Stages that need a named person on the other side.
-NEEDS_CONTACT = {"in_talks", "test_calls", "signed"}
+NEEDS_CONTACT = {"in_talks", "test_calls", "contract_review", "signed"}
 
 
 @dataclass(frozen=True)

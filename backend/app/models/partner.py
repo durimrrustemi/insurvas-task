@@ -17,6 +17,7 @@ class Stage(enum.StrEnum):
     REPLIED = "replied"
     IN_TALKS = "in_talks"
     TEST_CALLS = "test_calls"
+    CONTRACT_REVIEW = "contract_review"
     SIGNED = "signed"
     LOST = "lost"
 

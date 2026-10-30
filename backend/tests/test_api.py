@@ -123,12 +123,13 @@ class TestStageFlow:
         assert to_test["ready"] is True
 
         assert (await move(client, pid, "test_calls")).status_code == 200
+        assert (await move(client, pid, "contract_review")).status_code == 200
         assert (await move(client, pid, "signed", "18 USD/transfer")).status_code == 200
 
         acts = (await client.get(f"/api/v1/partners/{pid}/activities")).json()
         stage_changes = [a["body"] for a in acts if a["kind"] == "stage_change"]
-        assert stage_changes[0] == "test_calls -> signed: 18 USD/transfer"
-        assert len(stage_changes) == 5
+        assert stage_changes[0] == "contract_review -> signed: 18 USD/transfer"
+        assert len(stage_changes) == 6
 
     async def test_in_talks_without_contact_is_blocked(self, client: AsyncClient):
         pid = (await create_partner(client))["id"]
