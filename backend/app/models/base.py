@@ -11,7 +11,10 @@ def generate_uuid7() -> uuid.UUID:
 
 
 class Base(DeclarativeBase):
-    pass
+    # Fetch server-side defaults (created_at/updated_at) via RETURNING on flush.
+    # Without this they are expired after an UPDATE and serialising the row
+    # triggers a lazy load outside the async context (MissingGreenlet).
+    __mapper_args__ = {"eager_defaults": True}
 
 
 class TimestampMixin:
