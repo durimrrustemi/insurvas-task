@@ -6,9 +6,11 @@ MOCK_LLM=1 (default) returns deterministic canned responses.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -19,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 3
 TIMEOUT = 30
+BACKOFF_SECONDS = 1.0
 
 
 class AngleResponse(BaseModel):
@@ -31,7 +34,7 @@ class DraftResponse(BaseModel):
 
 
 # Mock responses keyed by prompt_name
-_MOCK_RESPONSES: dict[str, dict] = {
+_MOCK_RESPONSES: dict[str, dict[str, Any]] = {
     "ANGLE_V1": {
         "angle": (
             "Your 200+ agent team with live transfer experience"
@@ -156,12 +159,12 @@ _MOCK_RESPONSES: dict[str, dict] = {
 }
 
 
-async def complete_json(
+async def complete_json[M: BaseModel](
     prompt_name: str,
     prompt: str,
-    variables: dict,
-    schema: type[BaseModel],
-) -> BaseModel:
+    variables: dict[str, Any],
+    schema: type[M],
+) -> M:
     """Call LLM and return parsed response.
 
     With MOCK_LLM=1, returns canned responses from _MOCK_RESPONSES.
@@ -172,7 +175,7 @@ async def complete_json(
     return await _real_llm_call(prompt_name, prompt, variables, schema)
 
 
-def _mock_response(prompt_name: str, schema: type[BaseModel]) -> BaseModel:
+def _mock_response[M: BaseModel](prompt_name: str, schema: type[M]) -> M:
     data = _MOCK_RESPONSES.get(prompt_name)
     if data is None:
         logger.warning("No mock for prompt %s, using empty", prompt_name)
@@ -180,12 +183,12 @@ def _mock_response(prompt_name: str, schema: type[BaseModel]) -> BaseModel:
     return schema.model_validate(data)
 
 
-async def _real_llm_call(
+async def _real_llm_call[M: BaseModel](
     prompt_name: str,
     prompt: str,
-    variables: dict,
-    schema: type[BaseModel],
-) -> BaseModel:
+    variables: dict[str, Any],
+    schema: type[M],
+) -> M:
     """Real Anthropic API call with retries."""
     import anthropic
 
@@ -195,17 +198,17 @@ async def _real_llm_call(
         timeout=TIMEOUT,
     )
 
-    last_error = None
+    last_error: Exception | None = None
     for attempt in range(MAX_RETRIES):
         start = time.time()
         try:
             response = await client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=settings.llm_model,
                 max_tokens=1024,
                 messages=[{"role": "user", "content": filled}],
             )
             latency = time.time() - start
-            text = response.content[0].text
+            text = "".join(b.text for b in response.content if b.type == "text")
 
             # Parse JSON from response
             parsed = json.loads(text)
@@ -236,6 +239,8 @@ async def _real_llm_call(
                 attempt + 1,
                 e,
             )
+        if attempt < MAX_RETRIES - 1:
+            await asyncio.sleep(BACKOFF_SECONDS * 2**attempt)
 
     raise ExternalServiceError(
         f"LLM call {prompt_name} failed after {MAX_RETRIES} attempts: {last_error}"

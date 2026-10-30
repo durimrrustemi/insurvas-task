@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from app.config import CadenceConfig
 from app.prompts.draft_v1 import DRAFT_V1
@@ -97,7 +98,7 @@ async def generate_drafts(
     return drafts
 
 
-def _enforce_limits(body: str, channel: str, limits: dict) -> str:
+def _enforce_limits(body: str, channel: str, limits: dict[str, Any]) -> str:
     """Enforce hard length limits on message body."""
     if channel == "email":
         max_words = limits.get("max_words", 120)
@@ -111,7 +112,7 @@ def _enforce_limits(body: str, channel: str, limits: dict) -> str:
     return body
 
 
-def _enforce_subject(subject: str | None, limits: dict) -> str | None:
+def _enforce_subject(subject: str | None, limits: dict[str, Any]) -> str | None:
     if subject is None:
         return None
     max_chars = limits.get("max_subject_chars", 60)

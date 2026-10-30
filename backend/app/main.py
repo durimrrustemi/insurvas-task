@@ -13,7 +13,22 @@ from app.api.v1 import (
     partners,
     signals,
 )
-from app.errors import Conflict, DomainError, GateBlocked, InvalidTransition, NotFound
+from app.errors import (
+    Conflict,
+    DomainError,
+    ExternalServiceError,
+    GateBlocked,
+    InvalidTransition,
+    NotFound,
+)
+
+ERROR_STATUS: list[tuple[type[DomainError], int]] = [
+    (NotFound, 404),
+    (Conflict, 409),
+    (InvalidTransition, 409),
+    (GateBlocked, 422),
+    (ExternalServiceError, 502),
+]
 
 
 def create_app() -> FastAPI:
@@ -38,38 +53,11 @@ def create_app() -> FastAPI:
     application.include_router(discovery.router, prefix=api_prefix)
     application.include_router(board.router, prefix=api_prefix)
 
-    @application.exception_handler(NotFound)
-    async def not_found_handler(request: Request, exc: NotFound):
-        return JSONResponse(
-            status_code=404,
-            content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}},
-        )
-
-    @application.exception_handler(Conflict)
-    async def conflict_handler(request: Request, exc: Conflict):
-        return JSONResponse(
-            status_code=409,
-            content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}},
-        )
-
-    @application.exception_handler(InvalidTransition)
-    async def invalid_transition_handler(request: Request, exc: InvalidTransition):
-        return JSONResponse(
-            status_code=409,
-            content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}},
-        )
-
-    @application.exception_handler(GateBlocked)
-    async def gate_blocked_handler(request: Request, exc: GateBlocked):
-        return JSONResponse(
-            status_code=422,
-            content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}},
-        )
-
     @application.exception_handler(DomainError)
     async def domain_error_handler(request: Request, exc: DomainError):
+        status = next((code for cls, code in ERROR_STATUS if isinstance(exc, cls)), 500)
         return JSONResponse(
-            status_code=500,
+            status_code=status,
             content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}},
         )
 

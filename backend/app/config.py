@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -33,8 +34,8 @@ class GateConfig:
 @dataclass(frozen=True)
 class CadenceConfig:
     follow_up_days: list[int]
-    intents: list[dict]
-    channel_limits: dict[str, dict]
+    intents: list[dict[str, Any]]
+    channel_limits: dict[str, dict[str, Any]]
     reminder_days: int
     stale_stage_days: int
     max_follow_ups: int

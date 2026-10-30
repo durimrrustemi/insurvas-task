@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     google_places_key: str = ""
     anthropic_api_key: str = ""
     mock_llm: bool = True
+    llm_model: str = "claude-sonnet-5-5"
     config_dir: str = "config"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
